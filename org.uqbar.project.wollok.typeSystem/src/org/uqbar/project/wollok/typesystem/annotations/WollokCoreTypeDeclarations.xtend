@@ -26,12 +26,16 @@ class WollokCoreTypeDeclarations extends TypeDeclarations {
 		(String > String) => Boolean
 
 		Collection >> "add" === #[ELEMENT] => Void
+		Collection >> "remove" === #[ELEMENT] => Void
+		Collection >> "forEach" === #[closure(#[ELEMENT], ELEMENT)] => Void
+		Collection >> "clear" === #[] => Void
 		Collection + Collection => Collection
 
 		List + List => List
 		List >> "add" === #[ELEMENT] => Void
 		List >> "contains" === #[ELEMENT] => Boolean
 		List >> "first" === #[] => ELEMENT
+		List >> "last" === #[] => ELEMENT
 		List >> "size" === #[] => Integer
 
 		List >> "sum" === #[closure(#[ELEMENT], Integer)] => Integer

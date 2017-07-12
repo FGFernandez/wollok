@@ -170,7 +170,7 @@ object bosque{
 
 object canasta {
 	var cantidadManzanas = 2
-	method pesox() {
+	method peso() {
 		return 2 * cantidadManzanas
 	} 
 }
@@ -178,7 +178,7 @@ object canasta {
 object caperucita{
 	
 	method caloriasQueAporta(){
-		return 50 + canasta.pesox()
+		return 50 + canasta.peso()
 	}
 	method dondeVas(){
 		return casaAbuela
