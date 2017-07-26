@@ -94,14 +94,7 @@ class WollokObject extends AbstractWollokCallable implements EvaluationContext<W
 	
 	// ahh repetido ! no son polimorficos metodos y constructores! :S
 	def invokeConstructor(WollokObject... objects) {
-		var constructor = behavior.resolveConstructor(objects)
-		
-		// no-args constructor automatic execution 
-		if (constructor == null && objects.length == 0)
-			constructor = (behavior as WClass).findConstructorInSuper(EMPTY_OBJECTS_ARRAY)
-			
-		if (constructor != null)
-			evaluateConstructor(constructor, objects)
+		behavior.resolveConstructor(objects)?.evaluateConstructor(objects)
 	}
 	
 	def void evaluateConstructor(WConstructor constructor, WollokObject[] objects) {
@@ -204,12 +197,20 @@ class WollokObject extends AbstractWollokCallable implements EvaluationContext<W
 	
 	// UFFF no estoy seguro de esto ya 
 	override addReference(String variable, WollokObject value) {
-		throw new UnsupportedOperationException("TODO: auto-generated method stub")
+//		throw new UnsupportedOperationException("ERROR while adding reference [" + variable + "] to value [" + value + "]")
+		setReference(variable, value)
+//		addGlobalReference(variable, value)
+		value
 	}
 	
 	override addGlobalReference(String name, WollokObject value) {
 		interpreter.addGlobalReference(name, value)
 	}
+	
+	override removeGlobalReference(String name) {
+		interpreter.removeGlobalReference(name)
+	}
+	
 	
 	def <T> getNativeObject(Class<T> clazz) { this.nativeObjects.values.findFirst[clazz.isInstance(it)] as T }
 	def <T> getNativeObject(String clazz) {
@@ -223,10 +224,10 @@ class WollokObject extends AbstractWollokCallable implements EvaluationContext<W
 	}
 	
 	def callSuper(WMethodContainer superFrom, String message, WollokObject[] parameters) {
-		val hierarchy = behavior.linearizateHierarhcy
-		val subhierarhcy = hierarchy.subList(hierarchy.indexOf(superFrom) + 1, hierarchy.size)
+		val hierarchy = behavior.linearizeHierarchy
+		val subhierarchy = hierarchy.subList(hierarchy.indexOf(superFrom) + 1, hierarchy.size)
 		
-		val method = subhierarhcy.fold(null) [method, t |
+		val method = subhierarchy.fold(null) [method, t |
 			if (method != null)
 				method
 			else 

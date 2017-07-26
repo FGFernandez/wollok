@@ -3,6 +3,7 @@ package org.uqbar.project.wollok.ui.console.highlight
 import com.google.inject.Inject
 import java.io.ByteArrayInputStream
 import java.util.List
+import org.eclipse.jface.text.TextAttribute
 import org.eclipse.swt.SWT
 import org.eclipse.swt.custom.LineStyleEvent
 import org.eclipse.swt.custom.LineStyleListener
@@ -19,7 +20,6 @@ import static extension org.uqbar.project.wollok.ui.console.highlight.AnsiUtils.
 import static extension org.uqbar.project.wollok.ui.console.highlight.WTextExtensions.*
 import static extension org.uqbar.project.wollok.ui.quickfix.QuickFixUtils.*
 import static extension org.uqbar.project.wollok.utils.XTextExtensions.*
-import org.eclipse.xtext.diagnostics.Severity
 
 /**
  * A line style listener for the console to highlight code
@@ -58,7 +58,7 @@ class WollokCodeHighLightLineStyleListener implements LineStyleListener {
 	}
 	
 	override lineGetStyle(LineStyleEvent event) {
-		if (event == null || event.lineText == null || event.lineText.length == 0 || !event.isCodeInputLine)
+		if (event === null || event.lineText === null || event.lineText.length == 0 || !event.isCodeInputLine)
             return;
             
         val originalText = (event.widget as StyledText).text
@@ -74,9 +74,10 @@ class WollokCodeHighLightLineStyleListener implements LineStyleListener {
 		// add custom highlights
 		calculator.provideHighlightingFor(resource) [ offset, length, styleIds |
 			val styleId = styleIds.get(0) // just get the first one ??
-			val style = stylesProvider.getAttribute(styleId)
+			val TextAttribute style = stylesProvider.getAttribute(styleId)
 			
 			val s = new StyleRange(event.lineOffset + offset - headerLength, length, style.foreground, style.background)
+			s.underline = (style.style.bitwiseAnd(TextAttribute.UNDERLINE)) !== 0
 			s.data = styleId
 			
 			if (s.start <= originalText.length && s.end <= originalText.length) {
@@ -96,9 +97,10 @@ class WollokCodeHighLightLineStyleListener implements LineStyleListener {
 							.forEach [ styles.merge(it) ]
 		
 		// validations (checks)
-		checker.validate(Activator.getDefault.injector, resource, [], [issues |
-			issues.filter[ severity != Severity.WARNING ].forEach[ checkerError(event, offset, length) ]
-		])
+		// I HAVE TO DISABLE THIS AFTER FIXING THE WAY IT PARSES THE INPUT (because of linking errors like trying to set Object to object literals)
+//		checker.validate(Activator.getDefault.injector, resource, [], [issues |
+//			issues.filter[ severity != Severity.WARNING ].forEach[ checkerError(event, offset, length) ]
+//		])
 		
 		// REVIEW: I think this is not needed since we touch the original list
 		event.styles = styles.sortBy[start].toList 
@@ -118,25 +120,32 @@ class WollokCodeHighLightLineStyleListener implements LineStyleListener {
 	// *******************************************
 	
 	def parseIt(String content) {
-		new XtextResource => [
-			URI = resourceSet.computeUnusedUri("__repl_synthetic") 
-			Activator.getDefault.injector.injectMembers(it)
-			load(new ByteArrayInputStream(content.bytes), #{})			
-		]
+		val resource = resourceSet.createResource(resourceSet.computeUnusedUri("__repl_synthetic"))
+		resourceSet.resources.add(resource)
+		
+		resource.load(new ByteArrayInputStream(content.bytes), #{})
+		resource as XtextResource
 	}
-	
-	def checkerError(LineStyleEvent event, Integer offset, Integer length) { errorStyle(event, offset, length, "CHECK_ERROR") } 
-	def parserError(LineStyleEvent event, Integer offset, Integer length) { errorStyle(event, offset, length, "PARSER_ERROR") }
+
+	def checkerError(LineStyleEvent event, Integer offset, Integer length) {
+		errorStyle(event, offset, length, "CHECK_ERROR")
+	}
+
+	def parserError(LineStyleEvent event, Integer offset, Integer length) {
+		errorStyle(event, offset, length, "PARSER_ERROR")
+	}
+
 	def errorStyle(LineStyleEvent event, Integer offset, Integer length, String type) {
-		val theOffset = if (offset != null) offset else programHeader.length
-		val theLength = if (length != null) length else event.lineText.length
-		new StyleRange(event.lineOffset + (theOffset - programHeader.length), theLength, PARSER_ERROR_COLOR, null, SWT.ITALIC) => [
+		val theOffset = if(offset != null) offset else programHeader.length
+		val theLength = if(length != null) length else event.lineText.length
+		new StyleRange(event.lineOffset + (theOffset - programHeader.length), theLength, PARSER_ERROR_COLOR, null,
+			SWT.ITALIC) => [
 			data = type
 		]
 	}
-	
+
 	def static escape(String text) { text.escapeAnsi.replaceAll(PROMPT, PROMPT_REPLACEMENT) }
-	
+
 	def isCodeInputLine(LineStyleEvent it) { lineText.startsWith(PROMPT) || lineText.startsWith(PROMPT_ANSI) }
 
 	protected def safelyPrintStyles(LineStyleEvent event, String originalText) {

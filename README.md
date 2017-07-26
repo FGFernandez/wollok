@@ -1,4 +1,4 @@
-[![Stories in Ready](https://badge.waffle.io/uqbar-project/wollok.png?label=ready&title=Ready)](https://waffle.io/uqbar-project/wollok)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/77e46a36db0e475a81d674f2c72aff1a)](https://www.codacy.com/app/javier-fernandes/wollok?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=uqbar-project/wollok&amp;utm_campaign=Badge_Grade)
 [![Travis](https://travis-ci.org/uqbar-project/wollok.svg?branch=master)](https://travis-ci.org/uqbar-project/wollok?branch=master)
 [![Coverage Status](https://coveralls.io/repos/uqbar-project/wollok/badge.svg?branch=master)](https://coveralls.io/r/uqbar-project/wollok?branch=master)
 [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/uqbar-project/wollok?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
@@ -30,11 +30,11 @@ Finally if you just want the headless Development Kit (WDK), for example to use 
 
 * http://download.uqbar.org/wollok/sdk/
 
-This is useful for example if you are going to develop with Sublime or any other lightweight text editor
+This is useful for example if you are going to develop with [Sublime](https://github.com/uqbar-project/wollok-sublime-linter/blob/master/README.md) or any other lightweight text editor
 
 ## Documentation ##
 
-Refer to the [wiki](https://github.com/uqbar-project/wollok/wiki/Home) for documentation like [Language Reference](https://github.com/uqbar-project/wollok/wiki/LanguageReference) and Environment.
+Refer to the [wiki](https://github.com/uqbar-project/wollok/wiki/Home) for documentation like [Language Reference](http://www.wollok.org/en/lang-ref/) and Environment.
 
 ## What's the language like ? ##
 
@@ -77,13 +77,13 @@ Check out our [Language Reference](https://github.com/uqbar-project/wollok/wiki/
 
 You can either use its IDE:
 * Completely **integrated with Eclipse**.
-* With: many *static code analysis**, **Quick-Fixes**, **Refactors**
+* With: many **static code analysis**, **Quick-Fixes**, **Refactors**
 * An **interactive Console** (**REPL**)
 * **Visual representations**: Outline, Static diagram, Objects Diagrams
 * A **debugger**.
 
 Or use the WDK which has command line tools for running and checkin a program.
-This is also integrated with Sublime Editor.
+This is also integrated with [Sublime Editor](https://github.com/uqbar-project/wollok-sublime-linter/blob/master/README.md).
 
 ## How to Contribute ##
 
@@ -94,12 +94,13 @@ See [https://github.com/uqbar-project/wollok/wiki/Development](https://github.co
 
 ## License ##
 
-Copyright © 2014, [Uqbar Project Foundation](http://www.uqbar-project.org/), All Rights Reserved.
+Copyright © 2016, [Uqbar Project Foundation](http://www.uqbar-project.org/), All Rights Reserved.
 
 Distributed under the terms of LGPLv3
 [https://www.gnu.org/licenses/lgpl-3.0.txt](https://www.gnu.org/licenses/lgpl-3.0.txt)
 
 ## Contributors ##
+
 * [Javier Fernandes](http://ar.linkedin.com/pub/javier-fernandes/4/441/14/)
 * [Nicolás Passerini](https://github.com/npasserini)
 * [Pablo Tesone](http://github.com/tesonep)
@@ -123,3 +124,13 @@ Distributed under the terms of LGPLv3
 
 ## Metrics ##
 [![Throughput Graph](https://graphs.waffle.io/uqbar-project/wollok/throughput.svg)](https://waffle.io/uqbar-project/wollok/metrics)
+
+[![PRs](https://img.shields.io/github/issues-pr/uqbar-project/wollok.svg?maxAge=2592000)]()
+[![closed PRs](https://img.shields.io/github/issues-pr-closed/uqbar-project/wollok.svg?maxAge=2592000)]()
+
+[![issues](https://img.shields.io/github/issues-raw/badges/uqbar-project/wollok.svg?maxAge=2592000)]()
+[![issue resolution](http://isitmaintained.com/badge/resolution/uqbar-project/wollok.svg)](http://isitmaintained.com/project/uqbar-project/wollok "Average time to resolve an issue")
+
+[![Stories in Ready](https://badge.waffle.io/uqbar-project/wollok.png?label=ready&title=Ready)](https://waffle.io/uqbar-project/wollok)
+
+[![open issues](http://isitmaintained.com/badge/open/uqbar-project/wollok.svg)](http://isitmaintained.com/project/uqbar-project/wollok "Percentage of issues still open")

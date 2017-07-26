@@ -1,143 +1,160 @@
 package org.uqbar.project.wollok.tests.typesystem
 
-import org.junit.Ignore
 import org.junit.Test
+import org.junit.runners.Parameterized.Parameters
+import org.uqbar.project.wollok.typesystem.constraints.ConstraintBasedTypeSystem
 
-import static org.uqbar.project.wollok.typesystem.WollokType.*
+import static org.uqbar.project.wollok.sdk.WollokDSK.*
+import org.junit.Ignore
 
 /**
  * 
  * @author jfernandes
  */
- @Ignore
 class InheritanceTypeInferenceTestCase extends AbstractWollokTypeSystemTestCase {
-	
+
+	@Parameters(name="{index}: {0}")
+	static def Object[] typeSystems() {
+		#[
+//			SubstitutionBasedTypeSystem,	//TO BE FIXED
+			ConstraintBasedTypeSystem
+		// ,XSemanticsTypeSystem			// TODO 
+		// BoundsBasedTypeSystem,    TO BE FIXED
+		]
+	}
+
 	@Test
-	def void testVariableInferredToSuperClassWhenAssignedTwoDifferentSubclasses() { #['''
-			class Animal {}
-			class Golondrina extends Animal {}
-			class Perro extends Animal {}
-		''', ''' program p {
+	def void testVariableInferredToSuperClassWhenAssignedTwoDifferentSubclasses() {
+		#['''
+		class Animal {}
+		class Golondrina inherits Animal {}
+		class Perro inherits Animal {}
+		
+		 program p {
 			var animal
 			animal = new Golondrina()
 			animal = new Perro()
 		}'''].parseAndInfer.asserting [
-			noIssues
-			assertTypeOf(classType('Animal'), 'var animal')
+//			noIssues
+			assertTypeOf(classType('Animal'), 'animal')
 		]
 	}
-	
-	// method inheritance
-		
+
 	@Test
-	def void testMethodReturnTypeInferredFromSuperMethod() { '''
+	def void testMethodReturnTypeInferredFromSuperMethod() {
+		'''
 			class Animal {
-				var energia = 100
-				method getEnergia() { energia }
+				method getEnergia() { return 100 }
 			}
-			class Golondrina extends Animal {
+			class Golondrina inherits Animal {
+				var energia
 				override method getEnergia() {
-					null
+					return energia
 				}
 			}
 		'''.parseAndInfer.asserting [
 			noIssues
-			assertMethodSignature("() => Int", 'Golondrina.getEnergia')
-			assertTypeOf(WInt, "null")
+			assertMethodSignature("() => Integer", 'Golondrina.getEnergia')
+			assertInstanceVarType(classTypeFor(INTEGER), 'Golondrina.energia')
+		// assertTypeOf(classTypeFor(INTEGER), "null")
 		]
 	}
-	
+
 	@Test
-	def void testInstVarInferredTransitivelyFromInheritedReturnType() { '''
+	def void testInstVarInferredTransitivelyFromInheritedReturnType() {
+		'''
 			class Animal {
 				var energia = 100
-				method getEnergia() { energia }
+				method getEnergia() { return energia }
 			}
-			class Golondrina extends Animal {
-				val energiaGolondrina
+			class Golondrina inherits Animal {
+				const energiaGolondrina
 				override method getEnergia() {
-					energiaGolondrina
+					return energiaGolondrina
 				}
 			}
 		'''.parseAndInfer.asserting [
 			noIssues
-			assertMethodSignature("() => Int", 'Golondrina.getEnergia')
-			assertInstanceVarType(WInt, 'Golondrina.energiaGolondrina')
+			assertMethodSignature("() => Integer", 'Golondrina.getEnergia')
+			assertInstanceVarType(classTypeFor(INTEGER), 'Golondrina.energiaGolondrina')
 		]
 	}
-	
+
 	@Test
-	def void testAbstractMethodReturnTypeInferredGeneralizingOverridingMethodsInSubclasses() { '''
+	def void testAbstractMethodReturnTypeInferredGeneralizingOverridingMethodsInSubclasses() {
+		'''
 			class AnimalFactory {
 				method createAnimal()
 			}
 			class Animal {}
-			class Perro extends Animal {}
-			class Gato extends Animal {}
+			class Perro inherits Animal {}
+			class Gato inherits Animal {}
 			
-			class PerroFactory extends AnimalFactory {
-				override method createAnimal() { new Perro() }
+			class PerroFactory inherits AnimalFactory {
+				override method createAnimal() { return new Perro() }
 			}
-			class GatoFactory extends AnimalFactory {
-				override method createAnimal() { new Gato() }
+			class GatoFactory inherits AnimalFactory {
+				override method createAnimal() { return new Gato() }
 			}
 		'''.parseAndInfer.asserting [
 			noIssues
-			assertMethodSignature("() => Animal", 'AnimalFactory.createAnimal')
+			assertMethodSignature("() => Animal", 'PerroFactory.createAnimal')
 		]
 	}
-	
+
 	@Test
-	def void testAbstractMethodParameterInferredFromOverridingMethodsInSubclassesWithBasicTypes() { '''
+	def void testAbstractMethodParameterInferredFromOverridingMethodsInSubclassesWithBasicTypes() {
+		'''
 			class NumberOperation {
 				method perform(aNumber)
 			}
-			class DoubleOperation extends NumberOperation {
-				override method perform(aNumber) { aNumber + aNumber }
+			class DoubleOperation inherits NumberOperation {
+				override method perform(aNumber) { return aNumber + aNumber }
 			}
-			class TripleOperation extends NumberOperation {
-				override method perform(aNumber) { aNumber * 3 }
+			class TripleOperation inherits NumberOperation {
+				override method perform(aNumber) { return 3 * aNumber }
 			} 
 		'''.parseAndInfer.asserting [
 			noIssues
-			assertMethodSignature("(Int) => Int", 'NumberOperation.perform')
-			assertMethodSignature("(Int) => Int", 'DoubleOperation.perform')
-			assertMethodSignature("(Int) => Int", 'TripleOperation.perform')
+			assertMethodSignature("(Integer) => Integer", 'NumberOperation.perform')
+			assertMethodSignature("(Integer) => Integer", 'DoubleOperation.perform')
+			assertMethodSignature("(Integer) => Integer", 'TripleOperation.perform')
 		]
 	}
-	
+
 	// ***********************************************
 	// ** structural to nominal inference
 	// ***********************************************
-	
 	/**
 	 * <<<<< ESTE ES MAS HEAVY QUE EL DIABLO !!! >>>>>
 	 */
 	@Test
-	def void testAbstractMethodParameterInferredFromOverridingMethodsInSubclassesThroughStructuralTypes() { '''
+	@Ignore("Este test está mal")
+	def void testAbstractMethodParameterInferredFromOverridingMethodsInSubclassesThroughStructuralTypes() {
+		'''
 			class Animal {}
-			class Perro extends Animal { method ladrar() { 'Guau!' } }
-			class Gato extends Animal { method mauyar() { 'Miau!' } }
+			class Perro inherits Animal { method ladrar() { return 'Guau!' } }
+			class Gato inherits Animal { method mauyar() { return 'Miau!' } }
 			
 			class Entrenador {
 				method entrenar(unAnimal)
 			}
-			class EntrenadorDePerros extends Entrenador {
+			class EntrenadorDePerros inherits Entrenador {
 				override method entrenar(unAnimal) { 
-					unAnimal.ladrar()
+					return unAnimal.ladrar()
 				}
 			}
-			class EntrenadorDeGatos extends Entrenador {
+			class EntrenadorDeGatos inherits Entrenador {
 				override method entrenar(unAnimal) {
-					unaAnimal.mauyar()
+					return unAnimal.mauyar()
 				}
 			}
 		'''.parseAndInfer.asserting [
 			noIssues
 			assertMethodSignature("(Animal) => String", 'Entrenador.entrenar')
 			assertMethodSignature("(Animal) => String", 'EntrenadorDePerros.entrenar')
-			assertMethodSignature("(Animal) => String", 'EntrenadorDePerros.entrenar')
+			assertMethodSignature("(Animal) => String", 'EntrenadorDeGatos.entrenar')
 		]
 	}
-	
+
 }

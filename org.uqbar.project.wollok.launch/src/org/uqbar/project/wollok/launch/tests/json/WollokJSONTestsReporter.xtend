@@ -13,6 +13,7 @@ import org.uqbar.project.wollok.wollokDsl.WTest
 import wollok.lib.AssertionException
 
 import static extension org.uqbar.project.wollok.ui.utils.XTendUtilExtensions.*
+import static extension org.uqbar.project.wollok.launch.tests.WollokExceptionUtils.*
 
 /**
  * A test reporter that prints to console in JSON format.
@@ -28,9 +29,10 @@ class WollokJSONTestsReporter implements WollokTestsReporter {
 
 	var JsonWriter _writer
 
-	override testsToRun(WFile file, List<WTest> tests) {
+	override testsToRun(String suiteName, WFile file, List<WTest> tests) {
 		writer.beginObject => [
 			name("version").value(Wollok.VERSION)
+			if (!suiteName.empty) name("suite").value(suiteName)
 			name("tests").beginArray
 		]
 	}
@@ -79,7 +81,7 @@ class WollokJSONTestsReporter implements WollokTestsReporter {
 					name("message").value(assertionError.message)
 					name("file").value(resource.trimFragment.toString)
 					name("lineNumber").value(lineNumber)
-					name("stackTrace").value(assertionError.stackTraceAsString)
+					name("stackTrace").value(assertionError.wollokException?.convertToString) // TODO: Test it and adjust it
 				endObject
 			endObject
 		]
@@ -141,4 +143,10 @@ class WollokJSONTestsReporter implements WollokTestsReporter {
 		_writer = writer
 	}
 
+	override initProcessManyFiles() {
+	}
+	
+	override endProcessManyFiles() {
+	}
+	
 }

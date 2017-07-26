@@ -1,0 +1,21 @@
+/* XPECT_SETUP org.uqbar.project.wollok.tests.xpect.WollokXPectTest END_SETUP */
+
+class A {
+	method method1(asd) {
+		return asd + 1
+	}
+	
+	method method2(asd) = asd + 1
+	method method3(asd) = 4
+
+	method method4(asd) = return 4
+
+	// XPECT errors --> "Missing () in method definition" at "="
+	method method5 = return 4
+
+	// XPECT errors --> "Missing () in method definition" at "="
+	method method6 = 3
+
+	// XPECT errors --> "Missing () in method definition" at "="
+	method method7 = 3 + 23
+}

@@ -1,21 +1,20 @@
 package org.uqbar.project.wollok.launch.tests
 
 import com.google.inject.Inject
-import java.io.PrintWriter
-import java.io.StringWriter
 import java.util.ArrayList
+import java.util.LinkedList
 import java.util.List
 import net.sf.lipermi.handler.CallHandler
 import net.sf.lipermi.net.Client
 import org.eclipse.emf.common.util.URI
-import org.uqbar.project.wollok.interpreter.WollokInterpreterException
-import org.uqbar.project.wollok.interpreter.core.WollokProgramExceptionWrapper
+import org.uqbar.project.wollok.launch.Messages
 import org.uqbar.project.wollok.launch.WollokLauncherParameters
 import org.uqbar.project.wollok.wollokDsl.WFile
 import org.uqbar.project.wollok.wollokDsl.WTest
 import wollok.lib.AssertionException
 
-import static extension org.uqbar.project.wollok.interpreter.nativeobj.WollokJavaConversions.*
+import static extension org.uqbar.project.wollok.launch.tests.WollokExceptionUtils.*
+import static extension org.uqbar.project.wollok.model.WMethodContainerExtensions.*
 
 /**
  * WollokTestReporter implementation that sends the event to a remote
@@ -33,62 +32,68 @@ class WollokRemoteTestReporter implements WollokTestsReporter {
 	var Client client
 	var callHandler = new CallHandler
 	var WollokRemoteUITestNotifier remoteTestNotifier
-
+	val testsResult = new LinkedList<WollokResultTestDTO>
+	var boolean processingManyFiles
+	
+	String suiteName
+	List<WollokTestInfo> testFiles
+	
 	@Inject
 	def init() {
 		client = new Client("localhost", parameters.testPort, callHandler)
 		remoteTestNotifier = client.getGlobal(WollokRemoteUITestNotifier) as WollokRemoteUITestNotifier
+		testFiles = newArrayList
 	}
 
-	override reportTestAssertError(WTest test, AssertionException assertionError, int lineNumber, URI resource) {
-		remoteTestNotifier.assertError(test.name, assertionError, lineNumber, resource.toString)
+	override reportTestAssertError(WTest test, AssertionException assertionException, int lineNumber, URI resource) {
+		testsResult.add(WollokResultTestDTO.assertionError(test.getFullName(processingManyFiles), assertionException.message, assertionException.wollokException?.convertStackTrace, lineNumber, resource?.toString))
 	}
 
 	override reportTestOk(WTest test) {
-		remoteTestNotifier.testOk(test.name)
+		testsResult.add(WollokResultTestDTO.ok(test.getFullName(processingManyFiles)))
 	}
 
-	override testsToRun(WFile file, List<WTest> tests) {
-		remoteTestNotifier.testsToRun(file.eResource.URI.toString, new ArrayList(tests.map[new WollokTestInfo(it)]))
+	override testsToRun(String _suiteName, WFile file, List<WTest> tests) {
+		this.suiteName = _suiteName
+		val fileURI = file.eResource.URI.toString
+		if (processingManyFiles) {
+			this.suiteName = Messages.ALL_TEST_IN_PROJECT
+			this.testFiles.addAll(getRunnedTestsInfo(tests, fileURI))
+		} else {
+			remoteTestNotifier.testsToRun(suiteName, fileURI, getRunnedTestsInfo(tests, fileURI), false)
+		}
 	}
 
 	override testStart(WTest test) {
-		remoteTestNotifier.testStart(test.name)
+		// for better performance we avoid a RMI call
 	}
 
 	override reportTestError(WTest test, Exception exception, int lineNumber, URI resource) {
-		remoteTestNotifier.error(test.name, exception.convertToString, lineNumber, resource?.toString)
-	}
-	
-	def dispatch String convertToString(Exception exception) {
-		val sw = new StringWriter
-        exception.printStackTrace(new PrintWriter(sw))
-        sw.toString  
-	}
-	
-	def dispatch String convertToString(WollokProgramExceptionWrapper exception) {
-		exception.wollokException.call("getStackTraceAsString").wollokToJava(String) as String
+		testsResult.add(
+			WollokResultTestDTO.error(test.getFullName(processingManyFiles), exception.convertToString, exception.convertStackTrace, lineNumber,
+				resource?.toString))
 	}
 
-	def dispatch void prepareExceptionForTrip(Throwable e) {
-		if (e.cause != null)
-			e.cause.prepareExceptionForTrip
-	}
-	
-	def dispatch void prepareExceptionForTrip(WollokInterpreterException e) {
-		e.sourceElement = null
-
-		if (e.cause != null)
-			e.cause.prepareExceptionForTrip
-	}
-	
-	def dispatch void prepareExceptionForTrip(WollokProgramExceptionWrapper e) {
-		e.URI = null
-		if (e.cause != null)
-			e.cause.prepareExceptionForTrip		
-	}
-	
 	override finished() {
+		if (!processingManyFiles) {
+			remoteTestNotifier.testsResult(testsResult)
+		}
+	}
+
+	override initProcessManyFiles() {
+		processingManyFiles = true
+	}
+	
+	override endProcessManyFiles() {
+		remoteTestNotifier => [
+			testsToRun(suiteName, "", this.testFiles, true)
+			testsResult(testsResult)
+		]
+		processingManyFiles = false
+	}
+	
+	protected def List<WollokTestInfo> getRunnedTestsInfo(List<WTest> tests, String fileURI) {
+		new ArrayList(tests.map[new WollokTestInfo(it, fileURI, processingManyFiles)])
 	}
 	
 }

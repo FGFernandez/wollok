@@ -1,6 +1,6 @@
 package org.uqbar.project.wollok.typesystem
 
-import org.eclipse.xtend.lib.Property
+import org.eclipse.xtend.lib.annotations.Accessors
 
 /**
  * Base class for all types
@@ -8,7 +8,7 @@ import org.eclipse.xtend.lib.Property
  * @author jfernandes
  */
 abstract class BasicType implements WollokType {
-	@Property String name
+	@Accessors String name
 	
 	new(String name) { 	
 		this.name = name
@@ -25,11 +25,18 @@ abstract class BasicType implements WollokType {
 	override understandsMessage(MessageType message) { true }
 	override resolveReturnType(MessageType message) { WAny }
 	
-	override refine(WollokType previouslyInferred) {
+	def dispatch refine(WollokType previouslyInferred) {
 		if (previouslyInferred != this) 
 			throw new TypeSystemException("Incompatible type " + this + " is not compatible with " + previouslyInferred)
 		// dummy impl
 		previouslyInferred
+	}
+	
+	/**
+	 * {@link AnyType} can be refined to any other type. 
+	 */
+	def dispatch refine(AnyType previouslyInferred) { 
+		this
 	}
 	
 	// nothing !

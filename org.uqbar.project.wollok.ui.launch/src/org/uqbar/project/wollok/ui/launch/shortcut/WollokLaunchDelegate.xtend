@@ -21,6 +21,17 @@ import static org.uqbar.project.wollok.launch.io.IOUtils.*
 import static extension org.uqbar.project.wollok.ui.launch.WollokLaunchConstants.*
 import static extension org.uqbar.project.wollok.ui.launch.shortcut.WDebugExtensions.*
 
+import org.uqbar.project.wollok.WollokActivator
+
+import org.eclipse.ui.PlatformUI
+import org.eclipse.core.resources.IProject
+import org.eclipse.core.internal.resources.Project
+import org.eclipse.core.resources.ProjectScope
+import org.eclipse.ui.preferences.ScopedPreferenceStore
+import java.util.ArrayList
+import java.util.Arrays
+import org.eclipse.core.resources.ResourcesPlugin
+
 /**
  * Launches the process to execute the interpreter.
  * As the interpreter is written in Java, it extends JavaLaunchDelegate in order
@@ -39,7 +50,7 @@ class WollokLaunchDelegate extends JavaLaunchDelegate {
 	private static final String ATTR_REFRESH_SCOPE = DebugPlugin.getUniqueIdentifier() + ".ATTR_REFRESH_SCOPE";
 
 	override launch(ILaunchConfiguration configuration, String mode, ILaunch launch, IProgressMonitor monitor) throws CoreException {
-		if (configuration.getAttribute(ATTR_REFRESH_SCOPE, null as String) != null) {
+		if (mode.isDebug && configuration.getAttribute(ATTR_REFRESH_SCOPE, null as String) != null) {
 			DebugPlugin.getDefault.addDebugEventListener(createListener(configuration))
 		}
 		var config = configuration.configureLaunchSettings(mode)
@@ -87,13 +98,14 @@ class WollokLaunchDelegate extends JavaLaunchDelegate {
 	
 	def configureLaunchParameters(ILaunchConfiguration config, int requestPort, int eventPort){
 		val parameters = new WollokLauncherParameters
-		parameters.eventsPort = eventPort;
+		parameters.eventsPort = eventPort
 		parameters.requestsPort = requestPort
 		parameters.wollokFiles += config.wollokFile
 		parameters.hasRepl = config.hasRepl
+		parameters.libraries = config.libraries
 		parameters
 	}
-	
+		
 	def setArguments(ILaunchConfiguration config, int requestPort, int eventPort){
 		config.programArguments = configureLaunchParameters(config, requestPort, eventPort).build
 	}
@@ -120,7 +132,16 @@ class WollokLaunchDelegate extends JavaLaunchDelegate {
 					return
 				}
 			}
+			else if (event.isStarted) {
+				openDebugPerspective
+			}
 		}
+	}
+	
+	def openDebugPerspective() {
+		PlatformUI.workbench => [
+			showPerspective("org.eclipse.debug.ui.DebugPerspective", activeWorkbenchWindow)
+		]
 	}
 	
 }

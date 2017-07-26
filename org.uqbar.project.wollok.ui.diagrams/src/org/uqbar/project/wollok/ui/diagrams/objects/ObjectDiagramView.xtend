@@ -43,10 +43,10 @@ import org.eclipse.ui.actions.ActionFactory
 import org.eclipse.ui.part.ViewPart
 import org.eclipse.ui.views.properties.IPropertySheetPage
 import org.eclipse.xtext.ui.editor.ISourceViewerAware
-import org.uqbar.project.wollok.ui.diagrams.classes.CustomPalettePage
 import org.uqbar.project.wollok.ui.diagrams.classes.WollokDiagramsPlugin
-import org.uqbar.project.wollok.ui.diagrams.classes.model.ClassDiagram
 import org.uqbar.project.wollok.ui.diagrams.classes.model.Shape
+import org.uqbar.project.wollok.ui.diagrams.classes.model.StaticDiagram
+import org.uqbar.project.wollok.ui.diagrams.classes.palette.CustomPalettePage
 import org.uqbar.project.wollok.ui.diagrams.editparts.ConnectionEditPart
 import org.uqbar.project.wollok.ui.diagrams.objects.parts.ObjectDiagramEditPartFactory
 import org.uqbar.project.wollok.ui.diagrams.objects.parts.StackFrameEditPart
@@ -63,7 +63,7 @@ class ObjectDiagramView extends ViewPart implements ISelectionListener, ISourceV
 	SelectionSynchronizer synchronizer
 	ActionRegistry actionRegistry
 	
-	ClassDiagram diagram
+	StaticDiagram diagram
 	
 	DebugContextListener debugListener
 	
@@ -297,10 +297,11 @@ class ObjectDiagramView extends ViewPart implements ISelectionListener, ISourceV
 		
 		// set new stack
 		graphicalViewer.contents = stackframe
+		
 		layout()
 		
 		// recover old positions
-		val newModels = (graphicalViewer.contents as StackFrameEditPart).children.<ValueEditPart,VariableModel>map[ ep | ep.model as VariableModel ]
+		val newModels = newModels
 		val alreadyDisplaying = newModels.filter[ map.containsKey(valueString) ].toList
 		alreadyDisplaying.forEach[vm |
 				val oldShape = map.get(vm.valueString)
@@ -309,9 +310,13 @@ class ObjectDiagramView extends ViewPart implements ISelectionListener, ISourceV
 		]
 		
 		// tweak layout
-		val newNodes = newModels.filter[!alreadyDisplaying.contains(it)].toList
+//		val newNodes = newModels.filter[!alreadyDisplaying.contains(it)].toList
 //		relocateSolitaryNodes(newNodes)
 	}
+	
+	def getEditPart() { graphicalViewer.contents as StackFrameEditPart }
+	def getChildrenEditParts() { if (editPart != null) editPart.children as List<ValueEditPart> else #[]}
+	def getNewModels() { childrenEditParts.map[ ep | ep.model as VariableModel ] }
 	
 	def relocateSolitaryNodes(List<VariableModel> models) {
 		val nodesReferencedByJustOne = models.filter[m | m.targetConnections.size == 1]

@@ -9,17 +9,19 @@ import org.uqbar.project.wollok.interpreter.nativeobj.NativeMessage
 
 import static extension org.uqbar.project.wollok.interpreter.nativeobj.WollokJavaConversions.*
 import static extension org.uqbar.project.wollok.lib.WollokSDKExtensions.*
+import java.util.ArrayList
 
 /**
  * @author jfernandes
  */
-class WCollection<T extends Collection> {
+class WCollection<T extends Collection<WollokObject>> {
 	@Accessors var T wrapped
 	protected extension WollokInterpreterAccess = new WollokInterpreterAccess
 	
 	def Object fold(WollokObject acc, WollokObject proc) {
 		val c = proc.asClosure
-		wrapped.fold(acc) [i, e|
+		val Collection<WollokObject> iterable = new ArrayList(wrapped.toArray())
+		iterable.fold(acc) [i, e|
 			c.doApply(i, e)
 		]
 	}
@@ -50,14 +52,30 @@ class WCollection<T extends Collection> {
 	def join(String separator) {
 		wrapped.map[ if (it instanceof WCallable) call("toString") else toString ].join(separator)
 	}
-	
-	def wollokEquals(WollokObject other) {
-		val otherWrapped = other.getNativeObject(this.class).wrapped
-		otherWrapped.forEach [ println(it.class.name)]
-		other.hasNativeType(this.class.name) && ((otherWrapped).equals(this.wrapped))		
-	}
-	
+		
 	@NativeMessage("==")
 	def wollokEqualsEquals(WollokObject other) { wollokEquals(other) }
 	
+	@NativeMessage("equals")
+	def wollokEquals(WollokObject other) {
+		other.hasNativeType &&
+		verifySizes(wrapped, other.getNativeCollection) &&
+		verifyWollokElementsContained(wrapped, other.getNativeCollection) &&
+		verifyWollokElementsContained(other.getNativeCollection, wrapped)
+	}
+	
+	
+	protected def hasNativeType(WollokObject it) {
+		hasNativeType(this.class.name)
+	}
+	
+	protected def getNativeCollection(WollokObject it) {
+		getNativeObject(this.class).getWrapped()
+	}
+	
+	protected def verifySizes(Collection col, Collection col2) {
+		col.size.equals(col2.size)
+	}
+	
+	protected def verifyWollokElementsContained(Collection set, Collection set2) { false } // Abstract method
 }

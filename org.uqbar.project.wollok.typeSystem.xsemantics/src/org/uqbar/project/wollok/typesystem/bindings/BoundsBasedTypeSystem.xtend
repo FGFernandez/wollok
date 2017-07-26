@@ -1,16 +1,21 @@
 package org.uqbar.project.wollok.typesystem.bindings
 
+import com.google.inject.Inject
 import java.util.List
 import java.util.Map
+import org.apache.log4j.Logger
 import org.eclipse.emf.ecore.EObject
+import org.uqbar.project.wollok.interpreter.WollokClassFinder
 import org.uqbar.project.wollok.typesystem.ClassBasedWollokType
 import org.uqbar.project.wollok.typesystem.TypeSystem
 import org.uqbar.project.wollok.typesystem.WollokType
+import org.uqbar.project.wollok.validation.ConfigurableDslValidator
 import org.uqbar.project.wollok.wollokDsl.WAssignment
 import org.uqbar.project.wollok.wollokDsl.WBinaryOperation
 import org.uqbar.project.wollok.wollokDsl.WBlockExpression
 import org.uqbar.project.wollok.wollokDsl.WBooleanLiteral
 import org.uqbar.project.wollok.wollokDsl.WClass
+import org.uqbar.project.wollok.wollokDsl.WFile
 import org.uqbar.project.wollok.wollokDsl.WIfExpression
 import org.uqbar.project.wollok.wollokDsl.WMemberFeatureCall
 import org.uqbar.project.wollok.wollokDsl.WMethodDeclaration
@@ -18,13 +23,16 @@ import org.uqbar.project.wollok.wollokDsl.WNullLiteral
 import org.uqbar.project.wollok.wollokDsl.WNumberLiteral
 import org.uqbar.project.wollok.wollokDsl.WParameter
 import org.uqbar.project.wollok.wollokDsl.WProgram
-import org.uqbar.project.wollok.wollokDsl.WStringLiteral
+import org.uqbar.project.wollok.wollokDsl.WReturnExpression
 import org.uqbar.project.wollok.wollokDsl.WSelf
+import org.uqbar.project.wollok.wollokDsl.WStringLiteral
+import org.uqbar.project.wollok.wollokDsl.WVariable
 import org.uqbar.project.wollok.wollokDsl.WVariableDeclaration
 import org.uqbar.project.wollok.wollokDsl.WVariableReference
 
-import static org.uqbar.project.wollok.typesystem.WollokType.*
+import static org.uqbar.project.wollok.sdk.WollokDSK.*
 import static org.uqbar.project.wollok.typesystem.TypeSystemUtils.*
+import static org.uqbar.project.wollok.typesystem.WollokType.*
 
 import static extension org.uqbar.project.wollok.model.WMethodContainerExtensions.*
 import static extension org.uqbar.project.wollok.model.WollokModelExtensions.*
@@ -38,6 +46,27 @@ import static extension org.uqbar.project.wollok.model.WollokModelExtensions.*
 class BoundsBasedTypeSystem implements TypeSystem {
 	Map<EObject, TypedNode> nodes = newHashMap()
 	List<TypeBound> bounds = newArrayList
+	@Inject WollokClassFinder finder
+
+	val Logger log = Logger.getLogger(this.class)
+
+	override def name() { "Bounds Based" }
+	
+	override initialize(EObject program) {
+		// No initialization required
+	}
+
+	override validate(WFile file, ConfigurableDslValidator validator) {
+		log.debug("Validation with " + class.simpleName + ": " + file.eResource.URI.lastSegment)
+		this.analyse(file)
+		this.inferTypes
+		this.reportErrors(validator)
+	}
+
+	override def reportErrors(ConfigurableDslValidator validator) {
+		// TODO: report errors !
+	}
+
 
 	// node factory methods
 
@@ -100,6 +129,16 @@ class BoundsBasedTypeSystem implements TypeSystem {
 	// ** bind (first steps: builds up a graph with all types relations)
 	// **********************************************************************
 
+	def dispatch void bind(WFile p) {
+		p.inferredNode
+			p.elements.forEach[bind]
+	}
+	
+	def dispatch void bind(WSelf p) {
+		p.inferredNode
+			p <=> p.declaringContext
+	}
+
 	def dispatch void bind(WProgram p) {
 		p.inferredNode
 		p.elements.forEach[bind]
@@ -120,14 +159,23 @@ class BoundsBasedTypeSystem implements TypeSystem {
 
 	def dispatch void bind(WVariableDeclaration v) {
 		v.inferredNode [extension b|
-			if (v.right != null)
+			if (v.right !== null)
 				v >= v.right
 		]
+	}
+	
+	def dispatch void bind(WVariable v) {
+		v.inferredNode
 	}
 
 	def dispatch void bind(WVariableReference v) {
 		v.inferredNode
 			v <=> v.ref
+	}
+	
+	def dispatch void bind(WReturnExpression v) {
+		v.inferredNode
+			v <=> v.expression
 	}
 
 	def dispatch void bind(WAssignment a) {
@@ -138,9 +186,9 @@ class BoundsBasedTypeSystem implements TypeSystem {
 
 	def dispatch void bind(WBinaryOperation op) {
 		val opType = typeOfOperation(op.feature)
-		opType.value.fixedNode(op) [extension b |
-			op.leftOperand <<< opType.key.get(0)
-			op.rightOperand <<< opType.key.get(1)
+		op.classType(opType.value).fixedNode(op) [extension b |
+			op.leftOperand <<< op.classType(opType.key.get(0))
+			op.rightOperand <<< op.classType(opType.key.get(1))
 
 			op.leftOperand <=> op.rightOperand
 		]
@@ -148,7 +196,7 @@ class BoundsBasedTypeSystem implements TypeSystem {
 
 	def dispatch void bind(WIfExpression ef) {
 		ef.inferredNode [extension b|
-			ef.condition <<< WBoolean
+			ef.condition <<< ef.classType(BOOLEAN)
 			ef <=> ef.then
 			ef <=> ef.^else
 		]
@@ -167,9 +215,12 @@ class BoundsBasedTypeSystem implements TypeSystem {
 
 	// literals
 	def dispatch void bind(WNullLiteral p) { p.inferredNode }
-	def dispatch void bind(WNumberLiteral l) { WInt.fixedNode(l) }
-	def dispatch void bind(WStringLiteral l) { WString.fixedNode(l) }
-	def dispatch void bind(WBooleanLiteral l) { WBoolean.fixedNode(l) }
+	def dispatch void bind(WNumberLiteral it) {
+		val type = classType(if(value.contains(".")) DOUBLE else INTEGER) 
+		type.fixedNode(it)
+	}
+	def dispatch void bind(WStringLiteral it) { classType(STRING).fixedNode(it) }
+	def dispatch void bind(WBooleanLiteral it) { classType(BOOLEAN).fixedNode(it) }
 
 	def dispatch void bind(WMemberFeatureCall call) {
 		call.inferredNode
@@ -215,5 +266,10 @@ class BoundsBasedTypeSystem implements TypeSystem {
 	override queryMessageTypeForMethod(WMethodDeclaration declaration) {
 		throw new UnsupportedOperationException("TODO: auto-generated method stub")
 	}
-
+	
+	protected def ClassBasedWollokType classType(EObject model, String className) {
+		val clazz = finder.getCachedClass(model, className)
+		// REVIEWME: should we have a cache ?
+		new ClassBasedWollokType(clazz, this)
+	}
 }

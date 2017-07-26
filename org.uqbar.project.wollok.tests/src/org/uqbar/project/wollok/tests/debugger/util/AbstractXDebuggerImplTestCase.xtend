@@ -1,14 +1,16 @@
 package org.uqbar.project.wollok.tests.debugger.util
 
+import java.net.URI
 import java.util.List
+import org.apache.log4j.Logger
 import org.eclipse.xtend.lib.annotations.Accessors
+import org.uqbar.project.wollok.WollokConstants
 import org.uqbar.project.wollok.debugger.server.XDebuggerImpl
 import org.uqbar.project.wollok.debugger.server.out.XTextInterpreterEventPublisher
+import org.uqbar.project.wollok.debugger.server.rmi.DebugCommandHandler
 import org.uqbar.project.wollok.interpreter.WollokRuntimeException
 import org.uqbar.project.wollok.interpreter.stack.XStackFrame
 import org.uqbar.project.wollok.tests.interpreter.AbstractWollokInterpreterTestCase
-import org.uqbar.project.wollok.debugger.server.rmi.DebugCommandHandler
-import java.net.URI
 
 /**
  * Base class for testing the debugger XDebuggerImpl'ementation
@@ -21,8 +23,8 @@ import java.net.URI
  */
 abstract class AbstractXDebuggerImplTestCase extends AbstractWollokInterpreterTestCase {
 	// couldn't reuse the one from xtext because it is hardcoded
-	static val SYNTHETIC_FILE_PREFFIX = "__synthetic"
-	
+	static val SYNTHETIC_FILE_PREFFIX = WollokConstants.SYNTHETIC_FILE
+	val Logger log = Logger.getLogger(this.class)	
 	
 	/**
 	 * Used to test evaluation order by comparing only the code evaluated
@@ -40,7 +42,7 @@ abstract class AbstractXDebuggerImplTestCase extends AbstractWollokInterpreterTe
 		var i = 0
 		for (s : steps) {
 			if (s.currentLocation.fileURI.contains(SYNTHETIC_FILE_PREFFIX)) {
-				println("Asserting " + s.currentLocation.fileURI)
+				log.debug("Asserting " + s.currentLocation.fileURI)
 				if (i >= asserter.expectedSteps.size) {
 					fail("Found extra step not in expectation: " + s.code(program))
 				}
@@ -86,18 +88,19 @@ abstract class AbstractXDebuggerImplTestCase extends AbstractWollokInterpreterTe
 		var List<XStackFrame> steps = newArrayList
 		var XStackFrame lastStackElement = null
 		do {
-			Thread.sleep(100)
+			clientSide.waitUntilSuspended
 			
 			lastStackElement = realDebugger.stack.lastElement
 			steps += lastStackElement.clone
 			
 			val code = lastStackElement.code(programContent)
-			println("Evaluating "+ lastStackElement + " => " + code.replaceAll('\n', '¶'))
+			log.debug("Evaluating "+ lastStackElement + " => " + code.replaceAll('\n', '¶'))
 
+			clientSide.suspended = false;
 			realDebugger.stepInto()	
 		} while (!clientSide.isTerminated);
 		
-		println("Steps " + steps.map[System.identityHashCode(it)].join(', '))
+		log.debug("Steps " + steps.map[System.identityHashCode(it)].join(', '))
 		steps
 	}
 	
@@ -132,49 +135,67 @@ abstract class AbstractXDebuggerImplTestCase extends AbstractWollokInterpreterTe
 
 @Accessors
 class TestTextInterpreterEventPublisher implements XTextInterpreterEventPublisher, DebuggerEventAssertion {
+	val Logger log = Logger.getLogger(this.class)
+
 	var boolean started = false
 	var boolean terminated = false
+	var boolean suspended = false
+
 	List<DebuggerEventListener> listeners = newArrayList
 	// an object to manipulate the VM: pause, resume, etc.
 	DebugCommandHandler vm
 	
+	AssertionError assertionFailed
+	
 	override started() { 
-		println("STARTED")
+		log.debug("STARTED")
 		started = true
+		suspended = false 
 		notify [ started(vm) ]
 	}
 	
 	override terminated() {
-		println("TERMINATED") 
+		log.debug("TERMINATED")
 		terminated = true
+		suspended = false
+		
 		notify [ terminated(vm) ]
 	}
 	
 	override suspendStep() {
-		println("SUSPENDED")
+		log.debug("SUSPENDED")
+		suspended = true 
 		notify [ suspended(vm) ]
 	}
 	override resumeStep() {
-		println("RESUME")
+		log.debug("RESUME")
 		notify [ resumed(vm) ]
 	}
 	override breakpointHit(String fileName, int lineNumber) {
-		println("BREAKPOINT HIT")
+		log.debug("BREAKPOINT HIT")
 		notify [ breakpointHit(fileName, lineNumber, vm) ]
 	}
 	
 	def waitUntilStarted() { waitUntil [isStarted] }
 	def waitUntilTerminated() { waitUntil [isTerminated] }
+	def waitUntilSuspended() { waitUntil[isSuspended || isTerminated]}
 	
 	// utils
 	
 	protected def notify((DebuggerEventListener)=>void what) {
-		listeners.forEach(what)
+		try {
+			listeners.forEach(what)
+		}
+		catch (AssertionError e) {
+			assertionFailed = e
+			throw e
+		}
 	}
 	
 	protected def waitUntil(()=>Boolean condition) {
 		// REVIEW: this is an active wait. Not good, but well.. just for testing.
-		while (!condition.apply) Thread.sleep(100)
+		while (!condition.apply && assertionFailed === null) 
+			Thread.sleep(100)
 	}
 	
 	def expect((DebuggerEventAssertion)=>Object director) {
@@ -201,6 +222,12 @@ class TestTextInterpreterEventPublisher implements XTextInterpreterEventPublishe
 	def setBreakPoint(String fileName, int lineNumber) {
 		vm.setBreakpoint(new URI(fileName), lineNumber)
 		this
+	}
+	
+	def close() {
+		// todo: close connection ?
+		if (assertionFailed !== null)
+			throw assertionFailed
 	}
 	
 }

@@ -12,8 +12,20 @@
             class="org.uqbar.project.wollok.ui.WollokDslExecutableExtensionFactory:org.uqbar.project.wollok.ui.editor.WollokTextEditor"
             contributorClass="org.eclipse.ui.editors.text.TextEditorActionContributor"
             default="true"
-            extensions="wpgm,wlk,wtest"
+            extensions="wpgm,wlk"
             icon="icons/w.png"
+            id="org.uqbar.project.wollok.WollokDsl"
+            name="%wollokEditor">
+        </editor>
+    </extension>
+    <extension
+            point="org.eclipse.ui.editors">
+        <editor
+            class="org.uqbar.project.wollok.ui.WollokDslExecutableExtensionFactory:org.uqbar.project.wollok.ui.editor.WollokTextEditor"
+            contributorClass="org.eclipse.ui.editors.text.TextEditorActionContributor"
+            default="true"
+            extensions="wtest"
+            icon="icons/wollok-icon-test_16.png"
             id="org.uqbar.project.wollok.WollokDsl"
             name="%wollokEditor">
         </editor>
@@ -144,6 +156,23 @@
 				</enabledWhen>
 		        <filter name="projectNature" value="org.eclipse.xtext.ui.shared.xtextNature"/>
 	        </page>
+	      
+	   
+	      
+	        <page
+	            class="org.uqbar.project.wollok.ui.WollokDslExecutableExtensionFactory:org.eclipse.jdt.internal.ui.preferences.BuildPathsPropertyPage"
+	            id="org.uqbar.project.wollok.ui.properties.wollokProjectPropertyPage"
+	            category="org.uqbar.project.wollok.WollokDsl"
+	            name="%libraries">
+	            <enabledWhen>
+		            <adapt type="org.eclipse.core.resources.IProject"/>
+				</enabledWhen>
+		        <filter name="projectNature" value="org.eclipse.xtext.ui.shared.xtextNature"/>
+	        </page>
+	      
+	      
+	      
+	        
 	    </extension>
 	    <!-- VALIDATOR -->
     
@@ -503,6 +532,7 @@
             id="org.uqbar.project.wollok.ui.wizard.WollokDslNewProjectWizard"
             name="%wollokProject"
             project="true">
+            <description>%wollokProjectDescription</description>
       </wizard>
       <category
             id="org.uqbar.project.wollok.ui.category"
@@ -516,15 +546,27 @@
             icon="icons/wollok-icon-object_16.png"
             id="org.uqbar.project.wollok.ui.wizard.objects.NewWollokObjectsWizard"
             name="%wollokObjectsAndClasses">
+            <description>%wollokObjectsAndClassesDescription</description>
       </wizard>
       <wizard
             category="org.uqbar.project.wollok.ui.category"
             class="org.uqbar.project.wollok.ui.wizard.tests.NewWollokTestWizard"
-            descriptionImage="icons/wollok-logo.iconset/icon_32x32.png"
+            descriptionImage="icons/wollok-logo.iconset/test_32x32.png"
             finalPerspective="org.uqbar.project.wollok.ui.perspectives.WollokCodingPerspective"
             icon="icons/wollok-icon-message_16.png"
             id="org.uqbar.project.wollok.ui.wizard.tests.NewWollokTestWizard"
             name="%wollokTest">
+            <description>%wollokTestDescription</description>
+      </wizard>
+      <wizard
+            category="org.uqbar.project.wollok.ui.category"
+            class="org.uqbar.project.wollok.ui.wizard.tests.NewWollokDescribeWizard"
+            descriptionImage="icons/suite32x32.png"
+            finalPerspective="org.uqbar.project.wollok.ui.perspectives.WollokCodingPerspective"
+            icon="icons/suite.png"
+            id="org.uqbar.project.wollok.ui.wizard.tests.NewWollokDescribeWizard"
+            name="%wollokDescribe">
+            <description>%wollokDescribeDescription</description>
       </wizard>
       <wizard
             category="org.uqbar.project.wollok.ui.category"
@@ -534,6 +576,7 @@
             icon="icons/wollok-icon-program_16.png"
             id="org.uqbar.project.wollok.ui.wizard.program.NewWollokProgramWizard"
             name="%wollokProgram">
+            <description>%wollokProgramDescription</description>
       </wizard>
    </extension>
    <extension
@@ -548,7 +591,7 @@
          point="org.eclipse.ui.perspectives">
       <perspective
             class="org.uqbar.project.wollok.ui.perspectives.WollokCodingPerspectiveFactory"
-            icon="icons/wollok-logo-16.fw.png"
+            icon="icons/wollok-logo.iconset/icon_16x16.png"
             id="org.uqbar.project.wollok.ui.perspectives.WollokCodingPerspective"
             name="Wollok">
       </perspective>

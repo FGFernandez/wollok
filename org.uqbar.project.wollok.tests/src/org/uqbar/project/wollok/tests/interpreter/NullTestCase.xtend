@@ -64,13 +64,17 @@ class NullTestCase extends AbstractWollokInterpreterTestCase {
 		
 		program a {
 			var valorNulo
+			//Just to check if the null can be tested against a WKO
+			//Cannot be performed directly because you should not use comparison over WKO
+			var x = assert
+			
 			assert.notThat(null == 8)
 			assert.notThat(null == "pepe")
 			assert.notThat(null == 3.0)
 			assert.notThat(null == 1..2)
 			assert.notThat(null == [1,2,3])
 			assert.notThat(null == #{1,2,3})
-			assert.notThat(null == assert)
+			assert.notThat(null == x)
 			assert.notThat(null == new Golondrina())
 			assert.notThat(valorNulo == 8)
 			assert.that(valorNulo == null)
@@ -113,5 +117,62 @@ class NullTestCase extends AbstractWollokInterpreterTestCase {
 		assert.equals("Cannot use null in 'if' expression", mensajeError)
 		'''.test
 	}
-	
+
+	@Test
+	def void nullInAOpMultiAndPostFix() {
+		
+		'''
+		«definePepitaAndAlpiste»
+		program a {
+			assert.throwsException({ pepita.comer(alpiste)})
+		}
+		'''.interpretPropagatingErrors
+	}
+
+	@Test
+	def void nullInAOpMultiAndPostFix2() {
+		
+		'''
+		«definePepitaAndAlpiste»
+		program a {
+			assert.throwsException({ pepita.volar(10)})
+		}
+		'''.interpretPropagatingErrors
+	}
+
+	@Test
+	def void checkNullByIdentity(){
+		'''
+		program a {
+			var a = null
+			assert.that(a == null)
+			assert.notThat(a != null)
+			assert.that(a === null)
+			assert.notThat(a !== null)			
+			assert.notThat(1 === null)
+			assert.that(1 !== null)			
+		
+			assert.notThat(1 === 2)
+			assert.that(1 !== 2)						
+		}
+		'''.interpretPropagatingErrors
+	}
+
+	private def String definePepitaAndAlpiste() {
+		'''
+		object pepita {
+		    var energia
+		    method energia() { return energia }
+		
+		    method volar(metros) { energia -= metros * 10 }
+		    method comer(comida) { 
+		        energia += comida.energia()
+		    }
+		}
+
+		object alpiste {
+			method energia() = 2	
+		}
+		'''
+	}	
 }

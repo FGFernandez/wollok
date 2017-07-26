@@ -5,7 +5,11 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
+import java.util.Map
+import java.util.Set
+import org.eclipse.core.resources.IContainer
 import org.eclipse.core.resources.IFile
+import org.eclipse.core.resources.IMarker
 import org.eclipse.core.resources.IProject
 import org.eclipse.core.resources.IResource
 import org.eclipse.core.resources.IncrementalProjectBuilder
@@ -20,15 +24,21 @@ import org.eclipse.core.runtime.Status
 import org.eclipse.core.runtime.jobs.Job
 import org.eclipse.emf.common.util.URI
 import org.eclipse.emf.ecore.EObject
+import org.eclipse.emf.ecore.resource.Resource
+import org.eclipse.jdt.core.JavaCore
+import org.eclipse.jface.text.BadLocationException
+import org.eclipse.jface.text.IDocument
+import org.eclipse.jface.text.IRegion
 import org.eclipse.jface.text.source.IVerticalRuler
 import org.eclipse.jface.text.source.IVerticalRulerInfo
 import org.eclipse.swt.widgets.Display
 import org.eclipse.ui.IEditorPart
+import org.eclipse.ui.PartInitException
 import org.eclipse.ui.PlatformUI
 import org.eclipse.ui.texteditor.ITextEditor
 import org.eclipse.xtext.ui.editor.XtextEditor
 import org.eclipse.xtext.ui.editor.model.XtextDocumentUtil
-import org.eclipse.emf.ecore.resource.Resource
+import org.uqbar.project.wollok.WollokConstants
 
 /**
  * Utilities on top of eclipse platform.
@@ -77,13 +87,28 @@ class WEclipseUtils {
 		ResourcesPlugin.workspace.root.getFileForLocation(path)
 	}
 	
+	def static toIFile(EObject o) {
+		o.eResource.URI.toIFile
+	}
+	
+	def static getProject(EObject o) {
+		o.toIFile.project
+	}
+	
+	def static toIFile(java.net.URI uri) {
+		val path = Path.fromPortableString(uri.toString)
+		val file = path.toFile
+		var absolutePath = Path.fromOSString(file.absolutePath)
+		ResourcesPlugin.workspace.root.getFileForLocation(absolutePath)
+	}
+	
 	def static exists(IPath it) { ResourcesPlugin.getWorkspace.root.exists(it) }
 	def static exists(Resource it) {
 		if (isWorkspaceOpen && URI.isPlatform)
 			iPath.exists
 		else {
 			val s = URI.toFileString
-			s != null && new File(s).exists
+			s !== null && new File(s).exists
 		}
 	}
 	def static iPath(Resource it) { Path.fromOSString(URI.toPlatformString(true)) }
@@ -107,6 +132,15 @@ class WEclipseUtils {
 	
 	def static allProjects() { ResourcesPlugin.workspace.root.projects }
 	
+	def static openProjects() { 
+		val root =  ResourcesPlugin.getWorkspace().getRoot()
+		root.projects.filter[ project | project.isOpen() && project.hasNature(JavaCore.NATURE_ID)].toList 
+	}
+	
+	def static getProject(String projectName) {
+		openProjects.findFirst [ it.name.equalsIgnoreCase(projectName)]	
+	}
+	
 	def static fullBuild(IProject p, IProgressMonitor monitor) {
 		p.build(IncrementalProjectBuilder.FULL_BUILD, monitor)
 	}
@@ -118,5 +152,43 @@ class WEclipseUtils {
 	def static ObjectInputStream asObjectInputStream(File file) { new ObjectInputStream(new FileInputStream(file)) }
 	
 	def static nameWithoutExtension(IResource it) { if (name.contains(".")) name.substring(0, name.lastIndexOf('.')) else name }
+
+	def static openEditor(ITextEditor textEditor, String fileName, int lineNumber) {
+		try {
+			val IDocument document = textEditor.documentProvider.getDocument(textEditor.editorInput)
+			if(document === null) throw new RuntimeException("Could not open file " + fileName +	" in editor")
+			var IRegion lineInfo = null
+			// line count internaly starts with 0, and not with 1 like in GUI
+			lineInfo = document.getLineInformation(lineNumber - 1)
+			if (lineInfo !== null) {
+				textEditor.selectAndReveal(lineInfo.getOffset(), lineInfo.getLength())
+			}
+		} catch (BadLocationException e) {
+			// ignored because line number may not really exist in document,
+			// we guess this...
+		} catch (PartInitException e) {
+			e.printStackTrace
+		}
+	}
+	 
+	def static dispatch Set<IResource> getAllMembers(IContainer container) {
+		val Map<String,IResource> result = newHashMap
+		container
+			.members
+			.filter [ fullPath.toPortableString.contains(WollokConstants.SOURCE_FOLDER) ]
+			.forEach [
+				allMembers.forEach [ result.put(it.fullPath.toPortableString, it)]
+			]
+		result.values.toSet
+	}
+
+	def static dispatch Set<IResource> getAllMembers(IFile file) {
+		#{file}
+	}
+
+	def static hasErrors(IProject project) {
+		val severity = project.findMaxProblemSeverity(IMarker.PROBLEM, true, IResource.DEPTH_INFINITE)
+		severity == IMarker.SEVERITY_ERROR
+	}
 	
 }

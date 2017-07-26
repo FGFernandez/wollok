@@ -44,6 +44,9 @@ class Exception {
 	
 	/** @private */
 	method createStackTraceElement(contextDescription, location) = new StackTraceElement(contextDescription, location)
+
+	/** Provides programmatic access to the stack trace information printed by printStackTrace() with full path files for linking */
+	method getFullStackTrace() native
 	
 	/** Provides programmatic access to the stack trace information printed by printStackTrace(). */
 	method getStackTrace() native
@@ -56,6 +59,17 @@ class Exception {
 	
 	/** Overrides the behavior to compare exceptions */
 	override method equals(other) = other.className().equals(self.className()) && other.getMessage() == self.getMessage()
+}
+
+/**
+ * Thrown when a stack overflow occurs because an application
+ * recurses too deeply.
+ *
+ * @author jfernandes
+ * @since 1.5.1
+ */
+class StackOverflowException inherits Exception {
+	constructor() = super()
 }
 
 /**
@@ -146,6 +160,12 @@ class Object {
 	}
 
 	/**
+	 * Tells whether self object is not identical (the same) to the given one.
+	 * @See === message.
+	 */
+	method !==(other) = ! (self === other)
+	
+	/**
 	 * o1.equals(o2) is a synonym for o1 == o2
 	 */
 	method equals(other) = self == other
@@ -165,6 +185,13 @@ class Object {
 		// return self.toSmartString(#{})
 		return self.toSmartString([])
 	}
+	
+	/**
+	 * Provides a visual representation of Wollok Object
+	 * By default, same as toString but can be overriden
+	 * like in String
+	 */
+	method printString() = self.toString()
 
 	/** @private */
 	method toSmartString(alreadyShown) {
@@ -427,11 +454,11 @@ class Collection {
 	 * Answers a new collection that contains the result of transforming each of self collection's elements
 	 * using a given closure.
 	 * The condition is a closure argument that takes a single element and Answers an object.
-	 * @returns another collection (same type as self one)
+	 * @returns another list
 	 * Example:
 	 *      const ages = users.map({ user => user.age() })
 	 */
-	method map(closure) = self.fold(self.newInstance(), { acc, e =>
+	method map(closure) = self.fold([], { acc, e =>
 		 acc.add(closure.apply(e))
 		 acc
 	})
@@ -522,9 +549,14 @@ class Collection {
 	 * resulting collection.
 	 * @returns a new List
 	 * Example:
-	 *      const usersByAge = users.sortedBy({ a, b => a.age() < b.age() }) 
+	 *      const usersByAge = users.sortedBy({ a, b => a.age() < b.age() })
 	 */
-	method sortedBy(closure) = self.copy().asList().sortBy(closure)
+	method sortedBy(closure) {
+		var copy = self.copy().asList()
+		copy.sortBy(closure)
+		return copy
+	}
+	
 	
 	/**
 	 * Answers a new, empty collection of the same type as self.
@@ -655,7 +687,7 @@ class Set inherits Collection {
 	method join() native
 	
 	/**
-	 * @see Object#equals
+	 * Two sets are equals if they have the same elements
 	 */
 	override method equals(other) native
 	
@@ -853,6 +885,13 @@ class List inherits Collection {
 	
 	/** A list is == another list if all elements are equal (defined by == message) */
 	override method ==(other) native
+
+	/**
+	 * Answers the list without duplicate elements
+	 * [1, 3, 1, 5, 1, 3, 2, 5].withoutDuplicates() => Answers [1, 2, 3, 5]
+	 */
+	method withoutDuplicates() = self.asSet().asList()
+
 }
 
 /**
@@ -1007,7 +1046,28 @@ class Number {
 	method rem(other) { return self % other }
 	
 	method stringValue() = throw new Exception("Should be implemented in the subclass")
-	
+
+	/**
+	 * Rounds up self up to a certain amount of decimals.
+	 * Amount of decimals must be positive
+	 * 1.223445.roundUp(3) ==> 1.224
+	 * -1.223445.roundUp(3) ==> -1.224
+	 * 14.6165.roundUp(3) ==> 14.617
+	 * 5.roundUp(3) ==> 5
+	 */
+	 method roundUp(_decimals)
+
+	/**
+	 * Truncates self up to a certain amount of decimals.
+	 * Amount of decimals must be positive
+	 * 1.223445.truncate(3) ==> 1.223
+	 * 14.6165.truncate(3) ==> 14.616
+	 * -14.6165.truncate(3) ==> -14.616
+	 * 5.truncate(3) ==> 5
+	 */
+	method truncate(_decimals)
+
+	method plus() = self
 }
 
 /**
@@ -1134,7 +1194,13 @@ class Integer inherits Number {
 	 * 			3
 	 * 			4
 	 */
-	method times(action) = (1..self).forEach(action)
+	method times(action) { 
+		(1..self).forEach(action) 
+	}
+	
+	override method roundUp(_decimals) = self
+	override method truncate(_decimals) = self
+	
 }
 
 /**
@@ -1200,6 +1266,17 @@ class Double inherits Number {
 	 * Answers a random between self and max
 	 */
 	method randomUpTo(max) native
+	
+	/**
+	 * Answers the next integer greater than self
+	 * 13.224.roundUp() ==> 14
+	 * -13.224.roundUp() ==> -14
+	 * 15.942.roundUp() ==> 16
+	 */
+	method roundUp() = self.roundUp(0)
+	
+	override method roundUp(_decimals) native
+	override method truncate(_decimals) native
 }
 
 /**
@@ -1357,6 +1434,11 @@ class String {
 	
 	/** This object (which is already a string!) is itself returned */
 	override method toString() native
+	
+	/** String implementation of printString, 
+	 * simply adds quotation marks 
+	 */
+	override method printString() = '"' + self.toString() + '"'
 	
 	/** @private */
 	override method toSmartString(alreadyShown) native
@@ -1574,8 +1656,10 @@ class Date {
 	constructor()
 	constructor(_day, _month, _year) { self.initialize(_day, _month, _year) }
 	
+	override method toString() native 
+	
 	/** Two dates are equals if they represent the same date */
-	override method equals(_aDate) native
+	override method ==(_aDate) native
 	
 	/** Answers a copy of this Date with the specified number of days added. */
 	method plusDays(_days) native
@@ -1596,10 +1680,11 @@ class Date {
 	method day() native
 	
 	/** Answers the day of week of the Date, where
-	 * 0 = SUNDAY
 	 * 1 = MONDAY
 	 * 2 = TUESDAY
-	 * 3 = WEDNESDAY ...
+	 * 3 = WEDNESDAY
+	 * ...
+	 * 7 = SUNDAY
 	 */
 	method dayOfWeek() native
 	

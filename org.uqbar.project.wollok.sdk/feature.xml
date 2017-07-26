@@ -2,16 +2,20 @@
 <feature
       id="org.uqbar.project.wollok.sdk"
       label="Wollok Language Feature"
-      version="1.6.0.qualifier"
+      version="1.6.1.qualifier"
       provider-name="Uqbar Foundation"
       os="linux,macosx,win32">
 
    <description url="https://github.com/uqbar-project/wollok">
       Wollok Programming Language SDK
-
-Contains code editor as well as a runtime-engine, debugger, and REPL.
+Contains code editor as well as a runtime-engine, debugger, and
+REPL.
 All elements to work with the Wollok Programming Language.
    </description>
+
+   <copyright>
+      Copyright © 2014, Uqbar Project Foundation, All Rights Reserved.
+   </copyright>
 
    <license url="https://www.gnu.org/licenses/lgpl-3.0.txt">
       Copyright © 2014, Uqbar Project Foundation, All Rights Reserved.
@@ -320,13 +324,6 @@ Library.
          unpack="false"/>
 
    <plugin
-         id="org.uqbar.project.wollok.game.ui"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
-
-   <plugin
          id="org.uqbar.project.xinterpreter"
          download-size="0"
          install-size="0"
@@ -335,6 +332,27 @@ Library.
 
    <plugin
          id="org.apache.commons.collections"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.uqbar.project.wollok.typeSystem"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.uqbar.project.wollok.typeSystem.xsemantics"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.uqbar.project.wollok.typeSystem.xsemantics.ui"
          download-size="0"
          install-size="0"
          version="0.0.0"

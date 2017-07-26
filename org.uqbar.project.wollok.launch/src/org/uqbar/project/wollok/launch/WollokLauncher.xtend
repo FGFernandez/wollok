@@ -3,18 +3,21 @@ package org.uqbar.project.wollok.launch
 import com.google.inject.Injector
 import java.io.File
 import java.rmi.ConnectException
+import java.util.List
 import net.sf.lipermi.handler.CallHandler
 import net.sf.lipermi.net.Client
 import org.uqbar.project.wollok.debugger.server.XDebuggerImpl
+import org.uqbar.project.wollok.debugger.server.out.AsyncXTextInterpreterEventPublisher
 import org.uqbar.project.wollok.debugger.server.out.XTextInterpreterEventPublisher
 import org.uqbar.project.wollok.debugger.server.rmi.CommandHandlerFactory
 import org.uqbar.project.wollok.interpreter.WollokInterpreter
 import org.uqbar.project.wollok.interpreter.WollokRuntimeException
 import org.uqbar.project.wollok.interpreter.api.XDebugger
 import org.uqbar.project.wollok.interpreter.debugger.XDebuggerOff
+import org.uqbar.project.wollok.launch.repl.AnsiColoredReplOutputFormatter
+import org.uqbar.project.wollok.launch.repl.RegularReplOutputFormatter
 import org.uqbar.project.wollok.launch.repl.WollokRepl
 import org.uqbar.project.wollok.wollokDsl.WFile
-import org.uqbar.project.wollok.debugger.server.out.AsyncXTextInterpreterEventPublisher
 
 /**
  * Main program launcher for the interpreter.
@@ -28,6 +31,20 @@ class WollokLauncher extends WollokChecker {
 	def static void main(String[] args) {
 		new WollokLauncher().doMain(args)
 	}
+	
+	override doSomething(List<String> fileNames, Injector injector, WollokLauncherParameters parameters) {
+		try {
+			val interpreter = injector.getInstance(WollokInterpreter)
+			val debugger = createDebugger(interpreter, parameters)
+			interpreter.setDebugger(debugger)
+			val filesToParse = fileNames.map [ wollokFile | new File(wollokFile) ]
+			interpreter.interpret(filesToParse.parse)
+			System.exit(0)
+		} catch (Exception e) {
+			System.exit(-1)
+		}
+		
+	}
 
 	override doSomething(WFile parsed, Injector injector, File mainFile, WollokLauncherParameters parameters) {
 		try {
@@ -39,7 +56,8 @@ class WollokLauncher extends WollokChecker {
 			interpreter.interpret(parsed)
 	
 			if (parameters.hasRepl) {
-				new WollokRepl(this, injector, interpreter, mainFile, parsed).startRepl
+				val formatter = if (parameters.noAnsiFormat) new RegularReplOutputFormatter else new AnsiColoredReplOutputFormatter 
+				new WollokRepl(this, injector, interpreter, mainFile, parsed, formatter).startRepl
 			}
 			System.exit(0)
 		}

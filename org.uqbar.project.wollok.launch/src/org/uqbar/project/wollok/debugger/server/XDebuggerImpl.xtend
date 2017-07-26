@@ -1,7 +1,9 @@
 package org.uqbar.project.wollok.debugger.server
 
+import java.util.concurrent.CyclicBarrier
 import org.apache.log4j.Logger
 import org.eclipse.emf.ecore.EObject
+import org.eclipse.xtend.lib.annotations.Accessors
 import org.uqbar.project.wollok.debugger.server.out.XTextInterpreterEventPublisher
 import org.uqbar.project.wollok.interpreter.api.XDebugger
 import org.uqbar.project.wollok.interpreter.api.XInterpreter
@@ -18,7 +20,7 @@ import static extension org.uqbar.project.wollok.utils.XTextExtensions.*
 class XDebuggerImpl implements XDebugger {
 	static Logger log = Logger.getLogger(XDebuggerImpl)
 	XInterpreter<?> interpreter
-	var XTextInterpreterEventPublisher eventSender
+	@Accessors var XTextInterpreterEventPublisher eventSender
 	val breakpoints = <XBreakpoint>newArrayList 
 	val Object suspendedLock = new Object
 	EObject currentStepObject

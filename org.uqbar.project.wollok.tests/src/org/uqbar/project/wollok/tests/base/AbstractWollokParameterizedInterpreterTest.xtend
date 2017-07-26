@@ -3,7 +3,7 @@ package org.uqbar.project.wollok.tests.base
 import org.junit.Before
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
-import org.uqbar.project.wollok.WollokDslInjectorProvider
+import org.uqbar.project.wollok.tests.WollokDslInjectorProvider
 import org.uqbar.project.wollok.tests.interpreter.AbstractWollokInterpreterTestCase
 
 /**
@@ -23,7 +23,7 @@ abstract class AbstractWollokParameterizedInterpreterTest extends AbstractWollok
 	}
 
 	/**
-	 * Converts a Iterable of Iterables into an Iterable<Object[]> as required by the Parameterized runner
+	 * Converts an Iterable of Iterables into an Iterable<Object[]> as required by the Parameterized runner
 	 */
 	static def asParameters(Iterable<?> parameters) {
 		parameters.map[#[it] as Object[]]

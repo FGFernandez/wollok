@@ -1,6 +1,7 @@
 package org.uqbar.project.wollok.tests.debugger
 
 import java.util.List
+import org.apache.log4j.Logger
 import org.eclipse.emf.ecore.EObject
 import org.eclipse.xtend.lib.annotations.Accessors
 import org.junit.Test
@@ -30,13 +31,17 @@ class DebugWithoutThreadingTestCase extends AbstractWollokInterpreterTestCase {
 	def debugger() {
 		val debugger = new PostEvaluationTestDebugger(interpreter)
 		interpreter.debugger = debugger
+		//Tip: if tests fail you should use activate it
+		//debugger.logSession = true
 		debugger
 	}
 	
 	@Test
 	def void evaluatedCalled() {
 		val deb = debugger()
-		deb.childrenFirst = true
+		//Tip: if tests fail you should use activate it
+ 		deb.logSession = true
+ 		deb.childrenFirst = true
 		
 		'''
 		program a {
@@ -68,6 +73,7 @@ class DebugWithoutThreadingTestCase extends AbstractWollokInterpreterTestCase {
 						"e",
 						// closure 1st time
 						"sum",
+						"sum",
 						"s",
 						"sum += s",
 						"sum += s",
@@ -77,6 +83,7 @@ class DebugWithoutThreadingTestCase extends AbstractWollokInterpreterTestCase {
 						"e",
 						// closure 2st time
 						"sum",
+						"sum",
 						"s",
 						"sum += s",
 						"sum += s",
@@ -85,6 +92,7 @@ class DebugWithoutThreadingTestCase extends AbstractWollokInterpreterTestCase {
 						"closure",
 						"e",
 						// closure 3rd time
+						"sum",
 						"sum",
 						"s",
 						"sum += s",
@@ -101,6 +109,10 @@ class DebugWithoutThreadingTestCase extends AbstractWollokInterpreterTestCase {
 					"sum",
 					// call
 					// method equals(expected, actual) native 
+						"expected",
+						"actual",
+						"self",
+						"other",
 						"other",
 						"null",
 						"other != null",
@@ -110,6 +122,11 @@ class DebugWithoutThreadingTestCase extends AbstractWollokInterpreterTestCase {
 						"other != null && self === other",
 						"return other != null && self === other",
 						"{ return other != null && self === other }",
+						"(self == other)",
+						"! (self == other)",
+						"expected != actual",
+						"if (expected != actual) throw new AssertionException(\"Expected [\" + expected.printString() + \"] but found [\" + actual.printString() + \"]\", expected.printString(), actual.printString())",
+						"{ if (expected != actual) throw new AssertionException(\"Expected [\" + expected.printString() + \"] but found [\" + actual.printString() + \"]\", expected.printString(), actual.printString()) }",
 				"assert.equals(6, sum)",
 			"program a { const strings = [1, 2, 3] var sum = 0 strings.forEach { s => sum += s } assert.equals(6, sum) }"
 		])
@@ -118,6 +135,7 @@ class DebugWithoutThreadingTestCase extends AbstractWollokInterpreterTestCase {
 	@Test
 	def void aboutToEvaluateCalled() {
 		val deb = debugger()
+		deb.logSession = true
 		deb.childrenFirst = false 
 		'''
 		program a {
@@ -157,6 +175,7 @@ class DebugWithoutThreadingTestCase extends AbstractWollokInterpreterTestCase {
 											"sum += s",
 											"sum += s",
 												"sum",
+												"sum",
 												"s",
 									// fold (2nd)
 									"closure.apply(e)",
@@ -166,6 +185,7 @@ class DebugWithoutThreadingTestCase extends AbstractWollokInterpreterTestCase {
 											// closure apply
 											"sum += s",   // why is it duplicated ?
 											"sum += s",
+												"sum",
 												"sum",
 												"s",
 									// fold (3rd)
@@ -177,6 +197,7 @@ class DebugWithoutThreadingTestCase extends AbstractWollokInterpreterTestCase {
 											"sum += s",
 											"sum += s",
 												"sum",
+												"sum",
 												"s",
 						"assert.equals(6, sum)",
 							// target and args
@@ -184,6 +205,15 @@ class DebugWithoutThreadingTestCase extends AbstractWollokInterpreterTestCase {
 							assertCode(),
 							"6",
 							"sum",
+							"{ if (expected != actual) throw new AssertionException(\"Expected [\" + expected.printString() + \"] but found [\" + actual.printString() + \"]\", expected.printString(), actual.printString()) }",
+							"if (expected != actual) throw new AssertionException(\"Expected [\" + expected.printString() + \"] but found [\" + actual.printString() + \"]\", expected.printString(), actual.printString())",
+							"expected != actual",
+							"expected",
+							"actual",
+							"! (self == other)",
+							"(self == other)",
+							"self",
+							"other",
 							// body
 							"{ return other != null && self === other }",
 								"return other != null && self === other",
@@ -212,25 +242,33 @@ object assert {
 	 * 		var anotherNumber = 8
 	 *		assert.that(anotherNumber.even())   ==> no effect, ok		
 	 */
-	method that(value) native
+	method that(value) {
+		if (!value) throw new AssertionException("Value was not true")
+	}
 	
 	/** Tests whether value is false. Otherwise throws an exception. 
 	 * @see assert#that(value) 
 	 */
-	method notThat(value) native
+	method notThat(value) {
+		if (value) throw new AssertionException("Value was not false")
+	}
 	
 	/** 
-	 * Tests whether two values are equal, based on wollok == method
+	 * Tests whether two values are equal, based on wollok ==, != methods
 	 * 
 	 * Example:
 	 *		 assert.equals(10, 100.div(10)) ==> no effect, ok
 	 *		 assert.equals(10.0, 100.div(10)) ==> no effect, ok
 	 *		 assert.equals(10.01, 100.div(10)) ==> throws an exception 
 	 */
-	method equals(expected, actual) native
+	method equals(expected, actual) {
+		if (expected != actual) throw new AssertionException("Expected [" + expected.printString() + "] but found [" + actual.printString() + "]", expected.printString(), actual.printString()) 
+	}
 	
-	/** Tests whether two values are equal, based on wollok != method */
-	method notEquals(expected, actual) native
+	/** Tests whether two values are equal, based on wollok ==, != methods */
+	method notEquals(expected, actual) {
+		if (expected == actual) throw new AssertionException("Expected to be different, but [" + expected.printString() + "] and [" + actual.printString() + "] match")
+	}
 	
 	/** 
 	 * Tests whether a block throws an exception. Otherwise an exception is thrown.
@@ -239,7 +277,15 @@ object assert {
 	 * 		assert.throwsException({ 7 / 0 })  ==> Division by zero error, it is expected, ok
 	 *		assert.throwsException("hola".length() ) ==> throws an exception "Block should have failed"
 	 */
-	method throwsException(block) native
+	method throwsException(block) {
+		var failed = false
+		try {
+			block.apply()
+		} catch e {
+			failed = true
+		}
+		if (!failed) throw new AssertionException("Block should have failed")
+	}
 	
 	/** 
 	 * Tests whether a block throws an exception and this is the same expected. Otherwise an exception is thrown.
@@ -327,10 +373,13 @@ object assert {
 			}
 		if (continue) throw new Exception("Should have thrown an exception")	
 	}
+	
 	/**
 	 * Throws an exception with a custom message. Useful when you reach an unwanted code in a test.
 	 */
-	method fail(message) native
+	method fail(message) {
+		throw new AssertionException(message)
+	}
 	
 }
 '''.toString.replaceAll(System.lineSeparator, ' ').replaceAll('\\s+', ' ').trim()		
@@ -339,6 +388,8 @@ object assert {
 
 @Accessors
 class PostEvaluationTestDebugger extends XDebuggerOff {
+	val Logger log = Logger.getLogger(this.class)
+	
 	var boolean childrenFirst = true
 	var boolean logSession = false
 	val List<Pair<EObject, XStackFrame>> evaluated = newArrayList
@@ -360,7 +411,7 @@ class PostEvaluationTestDebugger extends XDebuggerOff {
 	
 	def store(EObject element) {
 		if (logSession)
-			println('"' + element.sourceCode.replaceAll(System.lineSeparator, ' ').replaceAll('\\s+', ' ').trim() + '",')
+			log.debug('"' + element.sourceCode.replaceAll(System.lineSeparator, ' ').replaceAll('\\s+', ' ').trim() + '",')
 		evaluated += (element -> interpreter.stack.peek.clone)
 	}
 	
@@ -375,7 +426,7 @@ class PostEvaluationTestDebugger extends XDebuggerOff {
 		for (t : evaluated) {
 			val escaped = t.key.escapedCode 
 			if (logSession)
-				println(escaped)
+				log.debug(escaped)
 			assertEquals(expected.get(i), escaped)
 			i++
 		}

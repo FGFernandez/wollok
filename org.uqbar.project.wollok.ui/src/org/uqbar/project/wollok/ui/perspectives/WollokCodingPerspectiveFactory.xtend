@@ -3,10 +3,12 @@ package org.uqbar.project.wollok.ui.perspectives
 import org.eclipse.jdt.ui.JavaUI
 import org.eclipse.ui.IPageLayout
 import org.eclipse.ui.IPerspectiveFactory
+import org.eclipse.ui.PlatformUI
 import org.eclipse.ui.console.IConsoleConstants
 import org.uqbar.project.wollok.ui.wizard.WollokDslNewProjectWizard
 import org.uqbar.project.wollok.ui.wizard.objects.NewWollokObjectsWizard
 import org.uqbar.project.wollok.ui.wizard.program.NewWollokProgramWizard
+import org.uqbar.project.wollok.ui.wizard.tests.NewWollokDescribeWizard
 import org.uqbar.project.wollok.ui.wizard.tests.NewWollokTestWizard
 
 /**
@@ -28,12 +30,16 @@ class WollokCodingPerspectiveFactory implements IPerspectiveFactory {
 			addPerspectiveShortcuts
 			addViewShortcuts
 		]
+		
+		//I force the opening of the debug perspective. So both are together and usable.
+		PlatformUI.workbench.showPerspective("org.eclipse.debug.ui.DebugPerspective", PlatformUI.workbench.activeWorkbenchWindow)
 	}
 	
 	def addViews(IPageLayout it) {
 		createFolder("bottomRight",	IPageLayout.BOTTOM, 0.75f, factory.editorArea) => [
 			addView(IPageLayout.ID_PROBLEM_VIEW)
 			addView(IConsoleConstants.ID_CONSOLE_VIEW)
+			addView("org.uqbar.project.wollok.ui.diagrams.class")
 			addView("org.eclipse.team.ui.GenericHistoryView")
 		]
 
@@ -45,11 +51,6 @@ class WollokCodingPerspectiveFactory implements IPerspectiveFactory {
 		createFolder("topRight", IPageLayout.RIGHT, 0.75f, factory.editorArea) => [
 			addView("org.eclipse.ui.views.ContentOutline");
 		]
-		
-//		#681 - For release 1.5, static diagram will remain hidden for Wollok perspective
-//		createFolder("right", IPageLayout.BOTTOM, 0.25f, "org.eclipse.ui.views.ContentOutline") => [
-//			addView("org.uqbar.project.wollok.ui.diagrams.class");
-//		]
 		
 		addFastView("org.eclipse.team.ccvs.ui.RepositoriesView", 0.50f)
 		addFastView("org.eclipse.team.sync.views.SynchronizeView", 0.50f)
@@ -68,7 +69,6 @@ class WollokCodingPerspectiveFactory implements IPerspectiveFactory {
 	def addPerspectiveShortcuts(IPageLayout it) {
 		#[
 			"org.eclipse.debug.ui.DebugPerspective",
-			"org.eclipse.ui.resourcePerspective",
 			"org.eclipse.team.ui.TeamSynchronizingPerspective"
 		]
 		.forEach[a| addPerspectiveShortcut(a) ]
@@ -84,6 +84,7 @@ class WollokCodingPerspectiveFactory implements IPerspectiveFactory {
 			"org.eclipse.ui.wizards.new.file",
 			NewWollokObjectsWizard.ID,
 			NewWollokTestWizard.ID,
+			NewWollokDescribeWizard.ID,
 			NewWollokProgramWizard.ID
 		]
 		.forEach[ a| addNewWizardShortcut(a) ]

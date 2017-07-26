@@ -31,6 +31,10 @@ class WDebugExtensions {
 		e.source instanceof IProcess && e.kind == DebugEvent.TERMINATE
 	}
 	
+	def static isStarted(DebugEvent e) {
+		e.source instanceof IProcess && e.kind == DebugEvent.CREATE
+	}
+	
 	// fire events
 	
 	def static void fireEvent(DebugEvent event) { DebugPlugin.getDefault.fireDebugEventSet(#[event]) }
@@ -40,6 +44,10 @@ class WDebugExtensions {
 	def static isDebug(String mode) { mode.equals(ILaunchManager.DEBUG_MODE) }
 	def static hasRepl(ILaunchConfiguration configuration){
 		configuration.getAttribute(WollokLaunchConstants.ATTR_WOLLOK_IS_REPL, false)	
+	}
+	
+	def static libraries(ILaunchConfiguration configuration) {
+		configuration.getAttribute(WollokLaunchConstants.ATTR_WOLLOK_LIBS, #[])			
 	}
 	
 	def static setProgramArguments(ILaunchConfiguration configuration, String newValue) {

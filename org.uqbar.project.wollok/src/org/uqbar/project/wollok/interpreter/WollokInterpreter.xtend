@@ -3,6 +3,7 @@ package org.uqbar.project.wollok.interpreter
 import com.google.inject.Inject
 import com.google.inject.Injector
 import java.io.Serializable
+import java.util.List
 import org.apache.commons.logging.Log
 import org.apache.commons.logging.LogFactory
 import org.eclipse.emf.ecore.EObject
@@ -20,6 +21,9 @@ import org.uqbar.project.wollok.interpreter.debugger.XDebuggerOff
 import org.uqbar.project.wollok.interpreter.stack.ObservableStack
 import org.uqbar.project.wollok.interpreter.stack.ReturnValueException
 import org.uqbar.project.wollok.interpreter.stack.XStackFrame
+import org.uqbar.project.wollok.wollokDsl.WFile
+
+import static org.uqbar.project.wollok.sdk.WollokDSK.*
 
 /**
  * XInterpreter impl for Wollok language.
@@ -39,6 +43,10 @@ class WollokInterpreter implements XInterpreter<EObject>, IWollokInterpreter, Se
 	override addGlobalReference(String name, WollokObject value) {
 		globalVariables.put(name, value)
 		value
+	}
+
+	override removeGlobalReference(String name) {
+		globalVariables.remove(name)
 	}
 
 	@Inject
@@ -89,34 +97,67 @@ class WollokInterpreter implements XInterpreter<EObject>, IWollokInterpreter, Se
 		}
 	}
 
-	override interpret(EObject rootObject, Boolean propagatingErrors) {
+	def interpret(List<EObject> eObjects) {
+		try {
+			interpret(eObjects, false)
+		} catch (WollokProgramExceptionWrapper e) {
+			// todo: what about "propagating errors?"
+			e.wollokException.call("printStackTrace")
+			throw e
+		}
+	}
+
+	def interpret(List<EObject> eObjects, boolean propagatingErrors) {
 		try {
 			log.debug("Starting interpreter")
-			val stackFrame = rootObject.createInitialStackElement
-			executionStack.push(stackFrame)
-			debugger.started
-
-			evaluating = rootObject
-
-			evaluator.evaluate(rootObject)
-
+//			val rootObject = eObjects.head
+//			rootObject.initStack 
+			evaluator.evaluateAll(eObjects)
 //			evaluating = null
 		} catch (WollokProgramExceptionWrapper e) {
 			throw e
-		} catch (Throwable e)
+		} catch (Throwable e) {
+			console.logError(e)
+			null
+		} finally
+			debugger.terminated
+	}
+
+	override interpret(EObject rootObject, Boolean propagatingErrors) {
+		try {
+			log.debug("Starting interpreter")
+			rootObject.generateStack
+			evaluator.evaluate(rootObject)
+		} catch (WollokProgramExceptionWrapper e) {
+			throw e
+		} catch (Throwable e) {
 			if (propagatingErrors)
 				throw e
 			else {
 				console.logError(e)
 				null
 			}
-		finally
+		} finally
 			debugger.terminated
+	}
+
+	def void initStack() {
+		executionStack = new ObservableStack<XStackFrame>
+	}
+	
+	def void generateStack(EObject rootObject) {
+		val stackFrame = rootObject.createInitialStackElement
+		executionStack.push(stackFrame)
+		debugger.started
+		evaluating = rootObject
 	}
 
 	def createInitialStackElement(EObject root) {
 		new XStackFrame(root, new WollokNativeLobby(console, this), WollokSourcecodeLocator.INSTANCE)
 	}
+
+	// non-thread-safe
+	boolean instantiatingStackOverFlow = false
 
 	override performOnStack(EObject executable, EvaluationContext<WollokObject> newContext,
 		()=>WollokObject something) {
@@ -125,7 +166,12 @@ class WollokInterpreter implements XInterpreter<EObject>, IWollokInterpreter, Se
 			return something.apply
 		catch (ReturnValueException e)
 			return e.value
-		finally
+		catch (StackOverflowError e) {
+			instantiatingStackOverFlow = true
+			val exp = (evaluator as WollokInterpreterEvaluator).newInstance(STACK_OVERFLOW_EXCEPTION)
+			instantiatingStackOverFlow = false
+			throw new WollokProgramExceptionWrapper(exp)
+		} finally
 			stack.pop
 	}
 
@@ -174,4 +220,5 @@ class WollokInterpreter implements XInterpreter<EObject>, IWollokInterpreter, Se
 		// I18N !
 		throw new UnresolvableReference('''Cannot resolve reference «variableName»''')
 	}
+
 }
