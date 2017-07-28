@@ -84,22 +84,52 @@ class NumberOperationsTypeInfererTest extends AbstractWollokCodeGeneratorTypeInf
 			program p {
 				var a
 				a = obj
-				return a.suma(17)
+				return a.suma()
 			}
 		'''.parseAndPerformAnalysis
 		
 		assertNativeTypeEquals(NativeTypesEnum.INT, pgm.returnVariable) 
 	}
 
+
 	@Test
-	def void inferOfSimplifiedToSmartString(){
+	def void smallSumProgramWithWKOUsingDoubles(){
 		'''
+			object obj {
+				const a = 17
+				
+				method suma(){
+					return 23.25 + a
+				}
+			}
 			program p {
-				var a = 23
-				return a.simplifiedToSmartString()
+				var a
+				a = obj
+				return a.suma()
 			}
 		'''.parseAndPerformAnalysis
 		
-		assertNativeTypeEquals(NativeTypesEnum.STRING, pgm.returnVariable) 
+		assertNativeTypeEquals(NativeTypesEnum.DOUBLE, pgm.returnVariable) 
 	}
+
+	@Test
+	def void smallSumProgramWithWKOUsingDoublesAsParameter(){
+		'''
+			object obj {
+				const a = 17.5
+				
+				method suma(){
+					return 23 + a
+				}
+			}
+			program p {
+				var a
+				a = obj
+				return a.suma()
+			}
+		'''.parseAndPerformAnalysis
+		
+		assertNativeTypeEquals(NativeTypesEnum.DOUBLE, pgm.returnVariable) 
+	}
+
 }

@@ -23,4 +23,16 @@ class BlockTest extends AbstractWollokCodeGeneratorTypeInfererTest {
 		assertTypeIs(UnionType, pgm.returnVariable)
 		assertUnionType(#{new NumericType(NativeTypesEnum.INT), new StringType}, pgm.returnVariable)
 	}
+
+	@Test
+	def void simpleBlock() {
+		'''
+			program p {
+				return { 123 }
+			}
+		'''.parseAndPerformAnalysis
+
+		assertTypeIs(UnionType, pgm.returnVariable)
+		assertUnionType(#{new NumericType(NativeTypesEnum.INT), new StringType}, pgm.returnVariable)
+	}
 }

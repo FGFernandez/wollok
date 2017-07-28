@@ -9,12 +9,10 @@ import org.uqbar.project.wollok.interpreter.natives.DefaultNativeObjectFactory
 @Accessors
 class NativeMethod extends Method {
 
-	val String name
 	val int numberOfParamters
 
 	new(ClassDefinition parent, String methodName, int numberOfParameters) {
-		super(parent)
-		this.name = methodName
+		super(parent, methodName)
 		this.numberOfParamters = numberOfParameters
 	}
 

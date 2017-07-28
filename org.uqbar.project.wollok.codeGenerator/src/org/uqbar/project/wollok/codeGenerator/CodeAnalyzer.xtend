@@ -48,6 +48,9 @@ import org.uqbar.project.wollok.wollokDsl.impl.WThrowImpl
 
 import static extension org.uqbar.project.wollok.codeGenerator.ModelExtensions.*
 import static extension org.uqbar.project.wollok.model.WollokModelExtensions.*
+import org.uqbar.project.wollok.wollokDsl.WSetLiteral
+import org.uqbar.project.wollok.services.WollokDslGrammarAccess.WLiteralElements
+import org.uqbar.project.wollok.wollokDsl.WListLiteral
 
 class CodeAnalyzer {
 	val program = new Program(this)
@@ -65,6 +68,7 @@ class CodeAnalyzer {
 		
 		throw new RuntimeException("This should be implemented: " + o?.class.name + " filename: " + o.file.URI.toString + " Line:" + node.startLine)
 	}
+	
 
 	def dispatch Expression analyze(WNumberLiteral o, Expression parent) { new NumberLiteral(parent, o.value) }
 
@@ -119,10 +123,13 @@ class CodeAnalyzer {
 	
 	def dispatch Expression analyze(WMethodDeclaration m, ClassDefinition classDefinition){
 		if(!m.native){
-				new Method(classDefinition) => [
+				new Method(classDefinition, m.name) => [
 						m.parameters.map[ e | e.analyze(it)]
-						it.operations.addAll(m.expression.analyze(it))
-						classDefinition.putMethodNamed(m.name, it)
+						//I will ignore if the method is abstract.
+						if(m.expression !== null){
+							it.operations.addAll(m.expression.analyze(it))
+							classDefinition.putMethodNamed(m.name, it)
+						}
 				]
 			}else{
 				new NativeMethod(classDefinition, m.name, m.parameters.size) => [
@@ -164,7 +171,7 @@ class CodeAnalyzer {
 		
 		if(className == "wollok.lang.Object") 
 			superClass = null 
-		else if(c.parent == null){
+		else if(c.parent === null){
 			superClass = program.resolveWollokClass("wollok.lang.Object")
 		}else{
 			superClass = program.resolveWollokClass(c.parent.fqn)
@@ -182,6 +189,14 @@ class CodeAnalyzer {
 			ms.selector = op.feature
 			ms.parameters = #[]
 		]
+	}
+
+	def dispatch Expression analyze(WSetLiteral sl, Expression parent){
+		new ConstructorCall(parent, WollokClassFinder.instance.getSetClass(sl).fqn)
+	}
+
+	def dispatch Expression analyze(WListLiteral ll, Expression parent){
+		new ConstructorCall(parent, WollokClassFinder.instance.getListClass(ll).fqn)
 	}
 	
 	def dispatch Expression analyze(WConstructorCall cc, Expression parent){
