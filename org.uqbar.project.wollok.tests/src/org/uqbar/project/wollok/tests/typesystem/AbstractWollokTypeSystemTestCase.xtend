@@ -58,12 +58,12 @@ abstract class AbstractWollokTypeSystemTestCase extends AbstractWollokParameteri
 
 	@Before
 	def void setupTypeSystem() {
-		WollokResourceCache.clearCache
-		
+		WollokResourceCache.clearCache()
+
 		tsystem = tsystemClass.newInstance
 		injector.injectMembers(tsystem)
 	}
-
+	
 	// Utility
 	def parseAndInfer(CharSequence file) {
 		parseAndInfer(#[file])
@@ -218,7 +218,7 @@ abstract class AbstractWollokTypeSystemTestCase extends AbstractWollokParameteri
 	def findMethod(String methodFQN) {
 		val fqn = methodFQN.split('\\.')
 		val m = WMethodContainer.find(fqn.get(0)).methods.findFirst[name == fqn.get(1)]
-		if (m == null)
+		if (m === null)
 			throw new RuntimeException("Could NOT find method " + methodFQN)
 		m
 	}
@@ -231,7 +231,7 @@ abstract class AbstractWollokTypeSystemTestCase extends AbstractWollokParameteri
 	def <T extends EObject> find(Class<T> resourceType, String resourceName) {
 		val resources = resourceSet.allContents.filter(resourceType).toList
 		resources.findFirst[it.name == resourceName] => [
-			if (it == null)
+			if (it === null)
 				throw new RuntimeException(
 					'''Could NOT find «resourceType.simpleName» [«resourceName»] in: «resources.map[it.name].toList»''')
 		]

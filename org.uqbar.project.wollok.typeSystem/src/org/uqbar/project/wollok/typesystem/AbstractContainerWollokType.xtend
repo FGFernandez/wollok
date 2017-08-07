@@ -5,13 +5,18 @@ import org.uqbar.project.wollok.wollokDsl.WMethodContainer
 
 import static extension org.uqbar.project.wollok.model.WMethodContainerExtensions.*
 import static extension org.uqbar.project.wollok.model.WollokModelExtensions.*
+import org.eclipse.xtend.lib.annotations.Accessors
 
 /**
  * 
  * @author jfernandes
+ * @author npasserini
  */
 abstract class AbstractContainerWollokType extends BasicType implements ConcreteType {
+	@Accessors(PUBLIC_GETTER)
 	WMethodContainer container
+	
+	@Accessors(PUBLIC_GETTER)
 	protected TypeSystem typeSystem
 	
 	new(WMethodContainer container, TypeSystem ts) {
@@ -19,11 +24,9 @@ abstract class AbstractContainerWollokType extends BasicType implements Concrete
 		this.container = container
 		this.typeSystem = ts
 	}
-	
-	def getContainer() { container }
-	
+		
 	override understandsMessage(MessageType message) {
- 		lookupMethod(message) != null		
+ 		lookupMethod(message) !== null		
  	}
  	
  	override lookupMethod(MessageType message) {
@@ -34,7 +37,7 @@ abstract class AbstractContainerWollokType extends BasicType implements Concrete
   		val m = container.lookupMethod(selector, parameterTypes, true)		
   		// TODO: por ahora solo checkea misma cantidad de parametros		
   		// 		debería en realidad checkear tipos !  		
-  		if (m != null && m.parameters.size == parameterTypes.size)		
+  		if (m !== null && m.parameters.size == parameterTypes.size)		
   			m		
   		else		
   			null		

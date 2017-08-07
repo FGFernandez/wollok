@@ -1,42 +1,25 @@
 package org.uqbar.project.wollok.tests.typesystem
 
-import com.google.inject.Guice
 import com.google.inject.Inject
 import org.eclipse.xtext.service.SingletonBinding
 import org.uqbar.project.wollok.launch.WollokLauncherParameters
-import org.uqbar.project.wollok.launch.setup.WollokLauncherModule
-import org.uqbar.project.wollok.launch.setup.WollokLauncherSetup
-import org.uqbar.project.wollok.tests.injectors.WollokTestInjector
+import org.uqbar.project.wollok.tests.injectors.WollokTestModule
 import org.uqbar.project.wollok.typesystem.TypeSystem
 import org.uqbar.project.wollok.typesystem.constraints.ConstraintBasedTypeSystem
 import org.uqbar.project.wollok.validation.WollokDslValidator
 import org.uqbar.project.wollok.validation.WollokValidatorExtension
 import org.uqbar.project.wollok.wollokDsl.WFile
 import org.xpect.setup.XpectGuiceModule
-
-//	public Injector createInjector() {
-//		return Guice.createInjector(new org.xpect.XpectRuntimeModule());
-//	}
-//	
-
-
-class WollokTypeSystemTestInjector extends WollokTestInjector {
-	override protected internalCreateInjector() {
-		new WollokTypeSystemTestSetup().createInjectorAndDoEMFRegistration
-	}
-
-}
-
-class WollokTypeSystemTestSetup extends WollokLauncherSetup {
-	override createInjector() {
-		return Guice.createInjector(new WollokTypeSysteTestModule(), this);
-	}
-}
+import org.eclipse.xtext.validation.Check
 
 @XpectGuiceModule
-class WollokTypeSysteTestModule extends WollokLauncherModule {
-	new() {
+class WollokTypeSystemTestModule extends WollokTestModule {
+	new(){
 		super(new WollokLauncherParameters)
+	}
+
+	new(WollokLauncherParameters params) {
+		super(params)
 	}
 
 	@SingletonBinding(eager=true)
@@ -65,6 +48,7 @@ class TypeSystemTestValidatorExtension implements WollokValidatorExtension {
 		this.typeSystem = typeSystem
 	}
 
+	@Check(NORMAL)
 	override check(WFile file, WollokDslValidator validator) {
 		typeSystem.initialize(file)
 		typeSystem.validate(file, validator)

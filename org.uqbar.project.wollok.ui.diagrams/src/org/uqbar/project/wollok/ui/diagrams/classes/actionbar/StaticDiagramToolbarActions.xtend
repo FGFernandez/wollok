@@ -209,7 +209,7 @@ class ShowFileAction extends ControlContribution implements Observer {
 	}
 
 	override update(Observable o, Object event) {
-		if ((event?.equals(StaticDiagramConfiguration.CONFIGURATION_CHANGED)) && (label !== null)) {
+		if ((event?.equals(StaticDiagramConfiguration.CONFIGURATION_CHANGED)) && (label !== null) && !(label.disposed)) {
 			label.text = "  " + configuration.originalFileName + "  "
 			label.parent.requestLayout
 		}
@@ -279,6 +279,41 @@ class ShowHiddenParts extends Action {
 
 	override run() {
 		configuration.showAllParts
+	}
+	
+}
+
+/**
+ * Adds an outsider class of this project into static diagram
+ */
+class AddOutsiderClass extends Action {
+
+	StaticDiagramConfiguration configuration
+
+	new(String title, StaticDiagramConfiguration configuration) {
+		super(title)
+		this.configuration = configuration
+		imageDescriptor = ImageDescriptor.createFromURL(new URL("platform:/plugin/org.eclipse.jdt.ui/icons/full/etool16/newclass_wiz.png"))
+	}
+
+	override run() {
+		new AddOutsiderClassView(configuration).open
+	}
+	
+}
+
+class DeleteAllOutsiderClasses extends Action {
+
+	StaticDiagramConfiguration configuration
+
+	new(String title, StaticDiagramConfiguration configuration) {
+		super(title)
+		this.configuration = configuration
+		imageDescriptor = ImageDescriptor.createFromURL(new URL("platform:/plugin/org.eclipse.jdt.ui/icons/full/obj16/classfo_obj.png"))
+	}
+
+	override run() {
+		configuration.initOutsiderElements
 	}
 	
 }

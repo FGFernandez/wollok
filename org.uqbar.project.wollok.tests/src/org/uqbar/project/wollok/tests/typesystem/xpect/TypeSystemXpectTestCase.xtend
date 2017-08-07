@@ -10,7 +10,6 @@ import org.junit.runner.notification.RunNotifier
 import org.junit.runners.model.InitializationError
 import org.uqbar.project.wollok.scoping.WollokResourceCache
 import org.uqbar.project.wollok.tests.typesystem.AbstractWollokTypeSystemTestCase
-import org.uqbar.project.wollok.tests.typesystem.WollokTypeSysteTestModule
 import org.uqbar.project.wollok.typesystem.ConcreteType
 import org.uqbar.project.wollok.typesystem.TypeSystem
 import org.uqbar.project.wollok.wollokDsl.WMemberFeatureCall
@@ -31,6 +30,7 @@ import org.xpect.xtext.lib.util.XtextOffsetAdapter.IEStructuralFeatureAndEObject
 
 import static extension org.uqbar.project.wollok.typesystem.TypeSystemUtils.*
 import static extension org.uqbar.project.wollok.typesystem.constraints.WollokModelPrintForDebug.*
+import org.uqbar.project.wollok.tests.typesystem.WollokTypeSystemTestModule
 
 /**
  * Test class for extending xpect to have tests on static proposals (content assist)
@@ -39,10 +39,10 @@ import static extension org.uqbar.project.wollok.typesystem.constraints.WollokMo
  */
 @RunWith(TypeSystemXpectRunner)
 @XpectSuiteClasses(#[ValidationTest])
-@XpectImport(WollokTypeSysteTestModule)
+@XpectImport(WollokTypeSystemTestModule)
 class TypeSystemXpectTestCase extends AbstractWollokTypeSystemTestCase {
 	@Inject TypeSystem typeSystem
-
+	
 	@Xpect(liveExecution=LiveExecutionType.FAST)
 	@ParameterParser(syntax="'at' arg1=OFFSET")
 	@ConsumedIssues(#[Severity.INFO, Severity.ERROR, Severity.WARNING])
@@ -87,7 +87,7 @@ class TypeSystemXpectRunner extends XpectRunner {
 	new(Class<?> testClass) throws InitializationError {
 		super(testClass)
 	}
-
+	
 	override runChild(Runner child, RunNotifier notifier) {
 		WollokResourceCache.clearCache
 		super.runChild(child, notifier)

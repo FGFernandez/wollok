@@ -14,7 +14,7 @@ import org.junit.Before
 import org.junit.runner.RunWith
 import org.uqbar.project.wollok.interpreter.WollokInterpreter
 import org.uqbar.project.wollok.interpreter.core.WollokProgramExceptionWrapper
-import org.uqbar.project.wollok.tests.injectors.WollokTestInjector
+import org.uqbar.project.wollok.tests.injectors.WollokTestInjectorProvider
 
 /**
  * Abstract base class for all interpreter tests cases.
@@ -24,7 +24,7 @@ import org.uqbar.project.wollok.tests.injectors.WollokTestInjector
  * @author jfernandes
  */
 @RunWith(XtextRunner)
-@InjectWith(WollokTestInjector)
+@InjectWith(WollokTestInjectorProvider)
 abstract class AbstractWollokInterpreterTestCase extends Assert {
 	@Inject protected extension WollokParseHelper
 	@Inject protected extension ValidationTestHelper
@@ -131,7 +131,7 @@ abstract class AbstractWollokInterpreterTestCase extends Assert {
 
 	def void assertIsException(Throwable exception, Class<? extends Throwable> clazz) {
 		if (!clazz.isInstance(exception)) {
-			if (exception.cause == null) {
+			if (exception.cause === null) {
 				exception.printStackTrace
 				fail('''Expecting exception «clazz.name» but found «exception.class.name»''')
 			}
@@ -147,7 +147,7 @@ abstract class AbstractWollokInterpreterTestCase extends Assert {
 			exception.message
 		}
 		else{
-			if (exception.cause == null)
+			if (exception.cause === null)
 				fail('''Expecting exception «clazz.name» but found «exception.class.name»''')
 
 			getMessageOf(exception.cause, clazz)
