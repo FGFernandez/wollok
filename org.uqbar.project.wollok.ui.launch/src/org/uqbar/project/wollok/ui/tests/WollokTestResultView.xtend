@@ -195,7 +195,7 @@ class WollokTestResultView extends ViewPart implements Observer {
 		showFailuresAndErrors = new ToolItem(toolbar, SWT.CHECK) => [
 			toolTipText = Messages.WollokTestResultView_showOnlyFailuresAndErrors
 			val pathImage = Activator.getDefault.getImageDescriptor(
-				"platform:/plugin/org.eclipse.jdt.junit/icons/full/obj16/failures.gif")
+				"platform:/plugin/org.eclipse.jdt.junit/icons/full/obj16/failures.png")
 			image = resManager.createImage(pathImage)
 			addListener(SWT.Selection)[this.toggleShowFailuresAndErrors]
 			enabled = true
@@ -204,7 +204,7 @@ class WollokTestResultView extends ViewPart implements Observer {
 		runAgain = new ToolItem(toolbar, SWT.PUSH) => [
 			toolTipText = Messages.WollokTestResultView_runAgain
 			val pathImage = Activator.getDefault.getImageDescriptor(
-				"platform:/plugin/org.eclipse.jdt.junit/icons/full/elcl16/relaunch.gif")
+				"platform:/plugin/org.eclipse.jdt.junit/icons/full/elcl16/relaunch.png")
 			image = resManager.createImage(pathImage)
 			addListener(SWT.Selection)[this.relaunch]
 			enabled = false
