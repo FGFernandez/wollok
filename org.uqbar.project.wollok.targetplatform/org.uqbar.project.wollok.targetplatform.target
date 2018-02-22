@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<?pde version="3.8"?><target name="org.uqbar.project.wollok.targetplatform" sequenceNumber="63">
+<?pde version="3.8"?><target name="org.uqbar.project.wollok.targetplatform" sequenceNumber="64">
 <locations>
 <location includeAllPlatforms="false" includeConfigurePhase="false" includeMode="planner" includeSource="true" type="InstallableUnit">
 <unit id="org.eclipse.egit.feature.group" version="4.8.0.201706111038-r"/>
@@ -29,8 +29,8 @@
 <repository location="http://download.eclipse.org/modeling/tmf/xtext/updates/composite/releases/"/>
 </location>
 <location includeAllPlatforms="false" includeConfigurePhase="false" includeMode="planner" includeSource="true" type="InstallableUnit">
-<unit id="org.xpect.sdk.feature.group" version="0.2.0.201611211350"/>
-<repository location="http://www.xpect-tests.org/updatesite/nightly/"/>
+<unit id="org.eclipse.xpect.sdk.feature.group" version="0.2.0.201802211802"/>
+<repository location="https://dl.bintray.com/wollok/xpect-update-site/"/>
 </location>
 <location includeAllPlatforms="false" includeConfigurePhase="false" includeMode="planner" includeSource="true" type="InstallableUnit">
 <unit id="org.eclipse.babel.nls_eclipse_es.feature.group" version="4.7.0.v20170819060001"/>
